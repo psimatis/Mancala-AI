@@ -14,9 +14,9 @@ def human_player(game, player):
 
 def ai_player(game, player):
     strategy = game.logic[player][1]
-    scores = [(idx, strategy[idx] * (game.board[player][idx] if not game.is_slot_empty(player, idx) else 0)) for idx in range(5)]
+    scores = [(idx, strategy[idx] * game.board[player][idx]) for idx in range(5)]
     scores.sort(key=lambda x: x[1], reverse=True)
     for idx, _ in scores:
         if not game.is_slot_empty(player, idx):
             return idx
-    return 0
+    return None
