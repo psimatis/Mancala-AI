@@ -64,12 +64,9 @@ class Game:
         return landing['idx'] == BANK
     
     def get_winner(self):
-        if self.board[1][BANK] > self.board[2][BANK]:
-            return 1
-        elif self.board[1][BANK] == self.board[2][BANK]:
-            return 0
-        else:
-            return 2
+        p1_pebbles = sum(self.board[1])
+        p2_pebbles = sum(self.board[2])
+        return 1 if p1_pebbles > p2_pebbles else 2 if p1_pebbles < p2_pebbles else 0
                 
     def print_board(self):
         print(self.board[1])
@@ -93,4 +90,5 @@ class Game:
                 if self.is_side_empty():
                     break
         if verbose: self.print_board()
+        if verbose: print(self.get_winner())
         return(self.get_winner())

@@ -13,12 +13,12 @@ def plot_training(history):
     plt.show()
 
 print('Training tournament-based genetic algorithm')
-genetic_player_tournament, history = genetic_algorithm(generations=20, population_size=100, simulations=1, elitisism=2, tournament=100)
+genetic_player_tournament, history = genetic_algorithm(generations=10, population_size=100, simulations=1, elitisism=2, tournament=100)
 print(f'Best strategy: ', genetic_player_tournament)
 plot_training(history)
 
 print('Training random-based genetic algorithm')
-genetic_player_random, history = genetic_algorithm(generations=20, population_size=100, simulations=100, elitisism=2, tournament=0)
+genetic_player_random, history = genetic_algorithm(generations=10, population_size=100, simulations=100, elitisism=2, tournament=0)
 print(f'Best strategy: ', genetic_player_random)
 plot_training(history)
 
@@ -59,3 +59,8 @@ def print_results(matches):
         print()
 
 print_results(matches)
+
+for p in player_profiles:
+    game = Game({1: ('human', None), 2: player_profiles[p]})
+    game.game_loop(verbose=True)
+    
