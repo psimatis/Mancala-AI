@@ -1,14 +1,14 @@
 import strategy
 
-BANK = 5
+BANK = 6
 
 class Game:
     board = {}
-    logic = {}
+    strategy = {}
     
     def __init__(self, logic):
-        self.board = {1: [5,5,5,5,5,0], 2: [5,5,5,5,5,0]}
-        self.logic = logic
+        self.board = {1: [6,6,6,6,6,6,0], 2: [6,6,6,6,6,6,0]}
+        self.strategy = logic
 
     def is_side_empty(self):
         return any(sum(self.board[side][:BANK]) == 0 for side in self.board)
@@ -20,47 +20,31 @@ class Game:
         return 2 if side == 1 else 1
     
     def player_choice(self, player):
-        if self.logic[player][0] == 'random':
+        if self.strategy[player][0] == 'random':
             return strategy.random_player(self, player)
-        elif self.logic[player][0] == 'human':
+        elif self.strategy[player][0] == 'human':
             return strategy.human_player(self, player)
-        elif self.logic[player][0] == 'greedy':
+        elif self.strategy[player][0] == 'greedy':
             return strategy.greedy_player(self, player)
         else:
-            return strategy.ai_player(self, player)
+            return strategy.genetic_ai_player(self, player)
         
-    def calculate_landing(self, side, start_idx):
+    def move(self, side, start_idx, calculate_landing=False):
         player = side
         pebbles = self.board[side][start_idx]
+        if not calculate_landing: self.board[side][start_idx] = 0
         idx = start_idx
         while pebbles > 0:
             idx = (idx + 1) % (BANK + 1)
             if idx == BANK:
                 if player == side:
+                    if not calculate_landing: self.board[side][BANK] += 1
                     pebbles -= 1
                 if pebbles > 0:
                     idx = -1
                     side = self.switch_side(side)
             else:
-                pebbles -= 1
-        return {'side':side, 'idx':idx}
-
-    def move(self, side, start_idx):
-        player = side
-        pebbles = self.board[side][start_idx]
-        self.board[side][start_idx] = 0
-        idx = start_idx
-        while pebbles > 0:
-            idx = (idx + 1) % (BANK + 1)
-            if idx == BANK:
-                if player == side:
-                    self.board[side][BANK] += 1
-                    pebbles -= 1
-                if pebbles > 0:
-                    idx = -1
-                    side = self.switch_side(side)
-            else:
-                self.board[side][idx] += 1
+                if not calculate_landing: self.board[side][idx] += 1
                 pebbles -= 1
         return {'side':side, 'idx':idx}
             

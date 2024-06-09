@@ -1,36 +1,19 @@
-import matplotlib.pyplot as plt
 from collections import defaultdict 
 from mancala import Game
-from train_genetic import genetic_algorithm
+from genetic_algorithm import run_genetic_algorithm
 
-def plot_training(history):
-    plt.figure(figsize=(10, 5))
-    plt.plot([history[g]['Best Fitness'] for g in history], marker='o', linestyle='-', color='b')
-    plt.title('Best Fitness Per Generation')
-    plt.xlabel('Generation')
-    plt.ylabel('Fitness')
-    plt.grid(True)
-    plt.show()
-
-print('Training tournament-based genetic algorithm')
-genetic_player_tournament, history = genetic_algorithm(generations=10, population_size=100, simulations=1, elitisism=2, tournament=100)
-print(f'Best strategy: ', genetic_player_tournament)
-plot_training(history)
-
-print('Training random-based genetic algorithm')
-genetic_player_random, history = genetic_algorithm(generations=10, population_size=100, simulations=100, elitisism=2, tournament=0)
-print(f'Best strategy: ', genetic_player_random)
-plot_training(history)
+genetic_player_random, _ = run_genetic_algorithm(generations=10)
+genetic_player_tournament, _ = run_genetic_algorithm(generations=10, simulations=1, tournament=100)
 
 player_profiles = {
     'random': ('random', None),
-    'gen_tour': ('AI', genetic_player_tournament),
-    'gen_rand': ('AI', genetic_player_random),
-    'greedy': ('greedy', None)
+    'greedy': ('greedy', None),
+    'genetic_random': ('AI', genetic_player_random),
+    'genetic_tournament': ('AI', genetic_player_tournament),
 }
 
 matches = defaultdict(lambda: defaultdict(int))
-matches_number = 1000
+matches_number = 100
 for p1 in player_profiles:
     for p2 in player_profiles:
         if p1 > p2:
@@ -56,10 +39,9 @@ def print_results(matches):
         p2_win_rate = (results[p2] / matches_number) * 100
         draw_rate = (results['draw'] / matches_number) * 100
         print(f"{match_name}:")
-        print(f"  {p1} Wins: {results[p1]} ({p1_win_rate:.2f}%)")
-        print(f"  {p2} Wins: {results[p2]} ({p2_win_rate:.2f}%)")
-        print(f"  Draws: {results['draw']} ({draw_rate:.2f}%)")
-        print()
+        print(f"  {p1} wins {p1_win_rate:.2f}%")
+        print(f"  {p2} wins {p2_win_rate:.2f}%")
+        print(f"  Draws {draw_rate:.2f}%")
 
 print_results(matches)
 

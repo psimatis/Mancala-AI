@@ -1,16 +1,17 @@
 import random
+import matplotlib.pyplot as plt
 import mancala
 
 def create_individual():
-    return [random.uniform(0, 1) for _ in range(5)]
+    return [random.uniform(0, 1) for _ in range(6)]
 
 def mutate(individual, mutation_rate):
     if random.random() < mutation_rate:
-        idx = random.randint(0, 4)
+        idx = random.randint(0, 5)
         individual[idx] = random.uniform(0, 1)
 
 def crossover(parent1, parent2):
-    idx = random.randint(0, 4)
+    idx = random.randint(0, 5)
     return parent1[:idx] + parent2[idx:]
 
 def run_simulation(simulations, strategy, opponent):
@@ -46,19 +47,30 @@ def evolve_population(population, fitness_func, mutation_rate, elitisism, simula
         next_population.append(offspring)
     return next_population, fitness_scores[0]
 
-def genetic_algorithm(generations=30, population_size=20, mutation_rate=0.1, simulations=30, elitisism=2, tournament=1, top=10):
+def plot_training(history):
+    plt.figure(figsize=(10, 5))
+    plt.plot([history[g]['Best Fitness'] for g in history], marker='o', linestyle='-', color='b')
+    plt.title('Best Fitness Per Generation')
+    plt.xlabel('Generation')
+    plt.ylabel('Fitness')
+    plt.grid(True)
+    plt.show()
+
+def run_genetic_algorithm(generations=10, population_size=100, mutation_rate=0.1, simulations=100, elitisism=2, tournament=0, top=10, verbose=True):
+    if verbose:
+        training_type = 'tournament' if tournament else 'random'
+        print(f'Training {training_type}-based genetic algorithm')
     history = {}
     population = [create_individual() for _ in range(population_size)]
-    
     for generation in range(generations):
         if tournament:
             fitness_func = lambda individual, sims: fitness_tournament(individual, random.sample(population, tournament), sims)
         else:
             fitness_func = fitness_random
-        
         population, (best_fitness, best_individual) = evolve_population(population, fitness_func, mutation_rate, elitisism, simulations, top)
-
-        print(f'Generation {generation}, Best Fitness: {best_fitness}, Individual: {best_individual}')
+        if verbose: print(f'Generation {generation}, Best Fitness: {best_fitness}, Individual: {best_individual}')
         history[generation] = {'Best Fitness': best_fitness, 'Individual': best_individual}
-
+    if verbose == True:
+        print(f'Best strategy: ', population[0])
+        plot_training(history)
     return population[0], history
