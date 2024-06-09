@@ -25,7 +25,8 @@ plot_training(history)
 player_profiles = {
     'random': ('random', None),
     'gen_tour': ('AI', genetic_player_tournament),
-    'gen_rand': ('AI', genetic_player_random)
+    'gen_rand': ('AI', genetic_player_random),
+    'greedy': ('greedy', None)
 }
 
 matches = defaultdict(lambda: defaultdict(int))
@@ -49,6 +50,8 @@ def print_results(matches):
     print(f'Match Results for {matches_number}:\n')
     for match_name, results in matches.items():
         p1, p2 = match_name.split(' vs ')
+        if p1 == p2:
+            continue
         p1_win_rate = (results[p1] / matches_number) * 100
         p2_win_rate = (results[p2] / matches_number) * 100
         draw_rate = (results['draw'] / matches_number) * 100

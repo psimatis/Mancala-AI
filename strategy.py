@@ -12,6 +12,24 @@ def human_player(game, player):
         slot_picked = int(input("Invalid choice. Enter a slot number (0-4) that has pebbles: "))
     return slot_picked
 
+def greedy_player(game, player):
+    valid_moves = [i for i in range(5) if not game.is_slot_empty(player, i)]
+    #check bonus round
+    for idx in valid_moves:
+        if game.board[player][idx] == 5 - idx:
+            return idx
+    #check capture
+    for idx in valid_moves:
+        landing = game.calculate_landing(player, idx)
+        if landing['side'] == player and game.is_slot_empty(player, landing['idx']):
+            return idx
+    # add to bank
+    for idx in valid_moves:
+        if game.board[player][idx] > 5 - idx:
+            return idx
+    #random
+    return random_player(game, player)
+
 def ai_player(game, player):
     strategy = game.logic[player][1]
     scores = [(idx, strategy[idx] * game.board[player][idx]) for idx in range(5)]

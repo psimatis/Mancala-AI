@@ -24,8 +24,26 @@ class Game:
             return strategy.random_player(self, player)
         elif self.logic[player][0] == 'human':
             return strategy.human_player(self, player)
+        elif self.logic[player][0] == 'greedy':
+            return strategy.greedy_player(self, player)
         else:
             return strategy.ai_player(self, player)
+        
+    def calculate_landing(self, side, start_idx):
+        player = side
+        pebbles = self.board[side][start_idx]
+        idx = start_idx
+        while pebbles > 0:
+            idx = (idx + 1) % (BANK + 1)
+            if idx == BANK:
+                if player == side:
+                    pebbles -= 1
+                if pebbles > 0:
+                    idx = -1
+                    side = self.switch_side(side)
+            else:
+                pebbles -= 1
+        return {'side':side, 'idx':idx}
 
     def move(self, side, start_idx):
         player = side
