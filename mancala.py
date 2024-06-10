@@ -75,14 +75,13 @@ class Game:
         print(self.board[2])
         print('---------')
 
-    def game_step(self, side, verbose=True):
+    def game_step(self, player_side, idx, verbose=True):
         info = {'landing': None, 'capture': False, 'bonus_round': False, 'game_over': False}
-        idx = self.player_choice(side)
         if verbose: 
-            print('Player', side, 'moves', idx)
-        landing = self.move(side, idx)
+            print('Player', player_side, 'moves', idx)
+        landing = self.move(player_side, idx)
         info['landing'] = landing
-        if self.capture(side, landing):
+        if self.capture(player_side, landing):
             info['capture'] = True
             if verbose: 
                 print('Capture!')
@@ -96,16 +95,17 @@ class Game:
 
     def game_loop(self, verbose=True):
         while not self.is_side_empty():
-            side = 1
-            while side < 3:
+            player_side = 1
+            while player_side < 3:
                 if verbose: 
                     self.print_board()
-                info = self.game_step(side, verbose)
+                idx = self.player_choice(player_side)
+                info = self.game_step(player_side, idx, verbose)
                 if info['game_over']:
                     break
                 if not info['bonus_round']:
-                    side += 1
+                    player_side += 1
         if verbose: 
             self.print_board()
-            print(self.get_winner())
+            print('Winner:', self.get_winner())
         return(self.get_winner())

@@ -10,9 +10,9 @@ player_profiles = (
     player.Human('human'),
     player.Random('random'),
     player.Greedy('greedy'),
-    player.Genetic('genetic_random', train_genetic(generations=2, verbose=False)),
-    player.Genetic('genetic_tournament', train_genetic(generations=2, simulations=1, tournament=100, verbose=False)),
-    player.DQN('dqn_random', train_dqn(episodes=2, opponent_types=(player.Random('random'),))),
+    player.Genetic('genetic_random', train_genetic(generations=10, verbose=False)),
+    player.Genetic('genetic_tournament', train_genetic(generations=10, simulations=1, tournament=100, verbose=False)),
+    player.DQN('dqn_random', train_dqn(episodes=10, opponent_types=(player.Random('random'),))),
     player.DQN('dqn_greedy', train_dqn(episodes=10, opponent_types=(player.Greedy('greedy'),))),
     player.DQN('dqn_mix', train_dqn(episodes=10)),
 )
@@ -25,7 +25,7 @@ def run_experiment(matches_number=100):
                 continue
             for _ in range(matches_number):
                 game = Game({1: p1, 2: p2})
-                winner = game.game_loop()
+                winner = game.game_loop(verbose=False)
                 match_name = p1.name + ' vs ' + p2.name
                 if winner == 0:
                     matches[match_name]['draw'] += 1

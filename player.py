@@ -48,6 +48,7 @@ class Genetic(Player):
                 return idx
         return random.choice([i for i in range(6) if not game.is_slot_empty(side, i)])
     
+# TODO: Restrict moves. Maybe use random if it picks an empty slot
 class DQN(Player):
     def act(self, game, side):
         return self.strategy.act(game.board[1] + game.board[2])

@@ -71,14 +71,19 @@ def get_state(env):
 
 def step(env, player, action):
     if env.is_slot_empty(player, action):
-        return get_state(env), -10, False  # Penalize invalid moves
-    landing = env.move(player, action)
-    reward = 10 if env.capture(player, landing) else 0
-    game_over = env.is_side_empty()
-    reward += 10 if env.check_bonus_round(landing) else 0
-    reward += 100 if game_over and env.get_winner() == player else 0
-    reward -= 100 if game_over and env.get_winner() != player else 0
-    return get_state(env), reward, game_over
+        return get_state(env), -10, False, False  # Penalize invalid moves
+    info = env.game_step(player, action, verbose=False)
+    reward = 0
+    if info['capture']:
+        reward += 10
+    if info['bonus_round']:
+        reward += 10
+    if info['game_over']:
+        if env.get_winner() == player:
+            reward += 100
+        else:
+            reward -= 100
+    return get_state(env), reward, info['game_over'], info['bonus_round']
 
 def train_dqn(episodes=10, batch_size=32, reward_type='', opponent_types=(player.Random('random'), player.Greedy('greedy')), verbose=True):
     """
@@ -98,17 +103,24 @@ def train_dqn(episodes=10, batch_size=32, reward_type='', opponent_types=(player
 
     for e in range(episodes):
         opponent = random.choice(opponent_types)
-        env = mancala.Game({'1': player.DQN('dqn'), '2': opponent})
+        env = mancala.Game({1: player.DQN('dqn', agent), 2: opponent})
         state = get_state(env)
         game_over = False
         loss = -1
         while not game_over:
-            action = agent.act(state)
-            next_state, reward, game_over = step(env, 1, action)
-            agent.remember(state, action, reward, next_state, game_over)
-            state = next_state
-            if len(agent.memory) > batch_size:
-                loss = agent.replay(batch_size)
+            player_side = 1
+            while player_side < 3:
+                action = agent.act(state)
+                next_state, reward, game_over, bonus_round = step(env, player_side, action)
+                agent.remember(state, action, reward, next_state, game_over)
+                state = next_state
+                if len(agent.memory) > batch_size:
+                    loss = agent.replay(batch_size)
+                if bonus_round or reward == -10:
+                    player_side -= 1
+                player_side += 1
+                if game_over:
+                    break
         agent.update_target_model()
         if verbose: print(f"Episode {e}, Epsilon: {agent.epsilon:.2f}, Loss: {loss:.2f}")
     return agent
