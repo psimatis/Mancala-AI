@@ -1,33 +1,32 @@
 from collections import defaultdict 
 from mancala import Game
-from genetic_algorithm import run_genetic_algorithm
+import player
+import genetic_algorithm as ga
+import dqn
 
-genetic_player_random, _ = run_genetic_algorithm(generations=10)
-genetic_player_tournament, _ = run_genetic_algorithm(generations=10, simulations=1, tournament=100)
+random_player = player.Random('random')
+greedy_player = player.Greedy('greedy')
+human_player = player.Human('human')
+genetic_player_random = player.Genetic('genetic_random', ga.run_genetic_algorithm(generations=2))
+genetic_player_tournament = player.Genetic('genetic_tournament', ga.run_genetic_algorithm(generations=2, simulations=1, tournament=100))
+dqn_player = player.DQN('dqn', dqn.train_dqn()) 
 
-player_profiles = {
-    'random': ('random', None),
-    'greedy': ('greedy', None),
-    'genetic_random': ('AI', genetic_player_random),
-    'genetic_tournament': ('AI', genetic_player_tournament),
-}
+player_profiles = (random_player, greedy_player, genetic_player_random, genetic_player_tournament, dqn_player)
 
 matches = defaultdict(lambda: defaultdict(int))
 matches_number = 100
 for p1 in player_profiles:
     for p2 in player_profiles:
-        if p1 > p2:
-            continue
         for _ in range(matches_number):
-            game = Game({1: player_profiles[p1], 2: player_profiles[p2]})
+            game = Game({1: p1, 2: p2})
             winner = game.game_loop()
-            match_name = p1 + ' vs ' + p2
+            match_name = p1.name + ' vs ' + p2.name
             if winner == 0:
                 matches[match_name]['draw'] += 1
             elif winner == 1:
-                matches[match_name][p1] += 1
+                matches[match_name][p1.name] += 1
             else:
-                matches[match_name][p2] += 1
+                matches[match_name][p2.name] += 1
 
 def print_results(matches):
     print(f'Match Results for {matches_number}:\n')
@@ -45,7 +44,7 @@ def print_results(matches):
 
 print_results(matches)
 
-for p in player_profiles:
-    game = Game({1: ('human', None), 2: player_profiles[p]})
-    game.game_loop(verbose=True)
+# for p in player_profiles:
+#     game = Game({1: ('human', None), 2: player_profiles[p]})
+#     game.game_loop(verbose=True)
     

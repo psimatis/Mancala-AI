@@ -1,6 +1,7 @@
 import random
 import matplotlib.pyplot as plt
 import mancala
+import player
 
 def create_individual():
     return [random.uniform(0, 1) for _ in range(6)]
@@ -17,7 +18,7 @@ def crossover(parent1, parent2):
 def run_simulation(simulations, strategy, opponent):
     wins = 0
     for _ in range(simulations):
-        game = mancala.Game({1: ['AI', strategy], 2: [opponent[0], opponent[1]]})
+        game = mancala.Game({1: player.Genetic('gen', strategy), 2: opponent})
         result = game.game_loop()
         if result == 1:
             wins += 1
@@ -28,18 +29,18 @@ def run_simulation(simulations, strategy, opponent):
 def fitness_tournament(strategy, opponents, simulations):
     wins = 0
     for opponent in opponents:
-        wins += run_simulation(simulations, strategy, ('AI', opponent))
+        wins += run_simulation(simulations, strategy, player.Genetic('gen', opponent))
     return wins
 
 def fitness_random(strategy, simulations):
-    return run_simulation(simulations, strategy, ('random', None))
+    return run_simulation(simulations, strategy, player.Random('random'))
 
-def evolve_population(population, fitness_func, mutation_rate, elitisism, simulations, top):
+def evolve_population(population, fitness_func, mutation_rate, elitism, simulations, top):
     fitness_scores = [(fitness_func(individual, simulations), individual) for individual in population]
     fitness_scores.sort(reverse=True, key=lambda x: x[0])
     population = [individual for _, individual in fitness_scores]
 
-    next_population = population[:elitisism]  
+    next_population = population[:elitism]  
     while len(next_population) < len(population):
         parent1, parent2 = random.choices(population[:top], k=2)
         offspring = crossover(parent1, parent2)
@@ -56,7 +57,7 @@ def plot_training(history):
     plt.grid(True)
     plt.show()
 
-def run_genetic_algorithm(generations=10, population_size=100, mutation_rate=0.1, simulations=100, elitisism=2, tournament=0, top=10, verbose=True):
+def run_genetic_algorithm(generations=10, population_size=100, mutation_rate=0.1, simulations=100, elitism=2, tournament=0, top=10, verbose=True):
     if verbose:
         training_type = 'tournament' if tournament else 'random'
         print(f'Training {training_type}-based genetic algorithm')
@@ -67,10 +68,10 @@ def run_genetic_algorithm(generations=10, population_size=100, mutation_rate=0.1
             fitness_func = lambda individual, sims: fitness_tournament(individual, random.sample(population, tournament), sims)
         else:
             fitness_func = fitness_random
-        population, (best_fitness, best_individual) = evolve_population(population, fitness_func, mutation_rate, elitisism, simulations, top)
+        population, (best_fitness, best_individual) = evolve_population(population, fitness_func, mutation_rate, elitism, simulations, top)
         if verbose: print(f'Generation {generation}, Best Fitness: {best_fitness}, Individual: {best_individual}')
         history[generation] = {'Best Fitness': best_fitness, 'Individual': best_individual}
     if verbose == True:
         print(f'Best strategy: ', population[0])
-        plot_training(history)
-    return population[0], history
+        # plot_training(history)
+    return population[0]

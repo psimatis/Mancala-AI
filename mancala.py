@@ -1,14 +1,17 @@
-import strategy
+import dqn 
 
 BANK = 6
 
 class Game:
     board = {}
-    strategy = {}
+    players = {}
     
-    def __init__(self, logic):
+    def __init__(self, players):
         self.board = {1: [6,6,6,6,6,6,0], 2: [6,6,6,6,6,6,0]}
-        self.strategy = logic
+        self.players = players
+
+    def reset(self):
+        self.board = {1: [6,6,6,6,6,6,0], 2: [6,6,6,6,6,6,0]}
 
     def is_side_empty(self):
         return any(sum(self.board[side][:BANK]) == 0 for side in self.board)
@@ -19,25 +22,19 @@ class Game:
     def switch_side(self, side):
         return 2 if side == 1 else 1
     
-    def player_choice(self, player):
-        if self.strategy[player][0] == 'random':
-            return strategy.random_player(self, player)
-        elif self.strategy[player][0] == 'human':
-            return strategy.human_player(self, player)
-        elif self.strategy[player][0] == 'greedy':
-            return strategy.greedy_player(self, player)
-        else:
-            return strategy.genetic_ai_player(self, player)
+    def player_choice(self, side):
+        player = self.players[side]
+        return player.act(self, side)
         
     def move(self, side, start_idx, calculate_landing=False):
-        player = side
+        player_side = side
         pebbles = self.board[side][start_idx]
         if not calculate_landing: self.board[side][start_idx] = 0
         idx = start_idx
         while pebbles > 0:
             idx = (idx + 1) % (BANK + 1)
             if idx == BANK:
-                if player == side:
+                if player_side == side:
                     if not calculate_landing: self.board[side][BANK] += 1
                     pebbles -= 1
                 if pebbles > 0:
@@ -77,18 +74,18 @@ class Game:
 
     def game_loop(self, verbose=False):
         while not self.is_side_empty():
-            player = 1
-            while player < 3:
+            side = 1
+            while side < 3:
                 if verbose: self.print_board()
-                slot_picked = self.player_choice(player)
-                if verbose: print('Player', player, 'moves', slot_picked)
-                landing = self.move(player, slot_picked)
-                if self.capture(player, landing):
+                slot_picked = self.player_choice(side)
+                if verbose: print('Player', side, 'moves', slot_picked)
+                landing = self.move(side, slot_picked)
+                if self.capture(side, landing):
                     if verbose: print('Capture!')
                 if self.check_bonus_round(landing):
                     if verbose: print('Bonus round!')
                 else:
-                    player += 1
+                    side += 1
                 if self.is_side_empty():
                     break
         if verbose: self.print_board()
