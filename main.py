@@ -3,22 +3,22 @@ from collections import defaultdict
 from mancala import Game
 import player
 from genetic_algorithm import train_genetic
-import dqn
+from dqn import train_dqn
 
 # Initialize players
-random_player = player.Random('random')
-greedy_player = player.Greedy('greedy')
-human_player = player.Human('human')
-genetic_random_player = player.Genetic('genetic_random', train_genetic(generations=2))
-genetic_tournament_player = player.Genetic('genetic_tournament', train_genetic(generations=2, simulations=1, tournament=100))
-dqn_player = player.DQN('dqn', dqn.train_dqn()) 
-
-player_profiles = (random_player, greedy_player, genetic_random_player, genetic_tournament_player, dqn_player)
+player_profiles = (
+    player.Human('human'),
+    player.Random('random'),
+    player.Greedy('greedy'),
+    player.Genetic('genetic_random', train_genetic(generations=10)),
+    player.Genetic('genetic_tournament', train_genetic(generations=10, simulations=1, tournament=100)),
+    player.DQN('dqn', train_dqn(episodes=10))
+)
 
 def run_experiment(matches_number=100):
     matches = defaultdict(lambda: defaultdict(int))
-    for p1 in player_profiles:
-        for p2 in player_profiles:
+    for p1 in player_profiles[1:]:
+        for p2 in player_profiles[1:]:
             if p1 == p2:
                 continue
             for _ in range(matches_number):
@@ -43,7 +43,6 @@ def print_results(matches, matches_number):
         p1_win_rate = (p1_wins / matches_number) * 100
         p2_win_rate = (p2_wins / matches_number) * 100
         draw_rate = (draws / matches_number) * 100
-
         results.append({
             "Player 1": p1,
             "Player 2": p2,
@@ -54,14 +53,24 @@ def print_results(matches, matches_number):
 
     df = pd.DataFrame(results)
     print(df.to_string(index=False))
+    print()
+
+    df['P1 Wins'] = df['Player 1 Win Rate'] > df['Player 2 Win Rate']
+    df['P2 Wins'] = df['Player 1 Win Rate'] < df['Player 2 Win Rate']
+    for i in ('1','2'):
+        grouped = df.groupby('Player ' + i)['P' + i + ' Wins'].sum().reset_index()
+        grouped = grouped.sort_values(by='P' + i + ' Wins', ascending=False).reset_index(drop=True)
+        print(grouped.to_string(index=False))
+        print()
 
 def play_mancala():
-    for p in player_profiles:
-        game = Game({1: human_player, 2: dqn_player})
+    for p in player_profiles[-1:]:
+        print('Playing against:', p.name)
+        game = Game({1: player_profiles[0], 2: p})
         game.game_loop(verbose=True)
 
 if __name__ == "__main__":
-    matches_number = 10
+    matches_number = 100
     matches = run_experiment(matches_number)
     print_results(matches, matches_number)
 
