@@ -57,7 +57,23 @@ def plot_training(history):
     plt.grid(True)
     plt.show()
 
-def run_genetic_algorithm(generations=10, population_size=100, mutation_rate=0.1, simulations=100, elitism=2, tournament=0, top=10, verbose=True):
+def train_genetic(generations=10, population_size=100, mutation_rate=0.1, simulations=100, elitism=2, tournament=0, top=10, verbose=True):
+    """
+    Run the genetic algorithm to evolve strategies.
+
+    Args:
+        generations (int): Number of generations to run the algorithm.
+        population_size (int): Size of the population.
+        mutation_rate (float): Probability of mutation.
+        simulations (int): Number of simulations per fitness evaluation.
+        elitism (int): Number of top individuals to carry over to the next generation.
+        tournament (int): Number of opponents for tournament selection (0 for random selection).
+        top (int): Number of top individuals for selection and crossover.
+        verbose (bool): If True, print progress and results.
+
+    Returns:
+        list: The best evolved strategy.
+    """
     if verbose:
         training_type = 'tournament' if tournament else 'random'
         print(f'Training {training_type}-based genetic algorithm')
@@ -73,5 +89,5 @@ def run_genetic_algorithm(generations=10, population_size=100, mutation_rate=0.1
         history[generation] = {'Best Fitness': best_fitness, 'Individual': best_individual}
     if verbose == True:
         print(f'Best strategy: ', population[0])
-        # plot_training(history)
+        plot_training(history)
     return population[0]

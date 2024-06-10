@@ -46,7 +46,7 @@ class Genetic(Player):
         for idx, _ in scores:
             if not game.is_slot_empty(side, idx):
                 return idx
-        return None
+        return random.choice([i for i in range(6) if not game.is_slot_empty(side, i)])
     
 class DQN(Player):
     def act(self, game, side):

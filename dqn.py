@@ -82,6 +82,16 @@ def step(env, player, action):
     return get_state(env), reward, done
 
 def train_dqn(episodes=10, batch_size=32):
+    """
+    Train the DQN agent.
+
+    Args:
+        episodes (int): Number of episodes to train.
+        batch_size (int): Size of the minibatch for training.
+
+    Returns:
+        DQNAgent: Trained DQN agent.
+    """
     print('Started training DQN player')
     env = mancala.Game({'1': ['AI', None], '2': ['random', None]})
     state_size = len(get_state(env))
@@ -102,5 +112,4 @@ def train_dqn(episodes=10, batch_size=32):
         agent.update_target_model()
         if e % 10 == 0:
             print(f"Episode {e}/{episodes}, Epsilon: {agent.epsilon:.2f}")
-
     return agent

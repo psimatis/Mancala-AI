@@ -1,11 +1,6 @@
-import dqn 
-
 BANK = 6
 
-class Game:
-    board = {}
-    players = {}
-    
+class Game:   
     def __init__(self, players):
         self.board = {1: [6,6,6,6,6,6,0], 2: [6,6,6,6,6,6,0]}
         self.players = players
@@ -29,19 +24,22 @@ class Game:
     def move(self, side, start_idx, calculate_landing=False):
         player_side = side
         pebbles = self.board[side][start_idx]
-        if not calculate_landing: self.board[side][start_idx] = 0
+        if not calculate_landing: 
+            self.board[side][start_idx] = 0
         idx = start_idx
         while pebbles > 0:
             idx = (idx + 1) % (BANK + 1)
             if idx == BANK:
                 if player_side == side:
-                    if not calculate_landing: self.board[side][BANK] += 1
+                    if not calculate_landing: 
+                        self.board[side][BANK] += 1
                     pebbles -= 1
                 if pebbles > 0:
                     idx = -1
                     side = self.switch_side(side)
             else:
-                if not calculate_landing: self.board[side][idx] += 1
+                if not calculate_landing: 
+                    self.board[side][idx] += 1
                 pebbles -= 1
         return {'side':side, 'idx':idx}
             
@@ -65,7 +63,12 @@ class Game:
     def get_winner(self):
         p1_pebbles = sum(self.board[1])
         p2_pebbles = sum(self.board[2])
-        return 1 if p1_pebbles > p2_pebbles else 2 if p1_pebbles < p2_pebbles else 0
+        if p1_pebbles > p2_pebbles:
+            return 1
+        elif p1_pebbles < p2_pebbles:
+            return 2
+        else:
+            return 0
                 
     def print_board(self):
         print(self.board[1])
@@ -88,6 +91,7 @@ class Game:
                     side += 1
                 if self.is_side_empty():
                     break
-        if verbose: self.print_board()
-        if verbose: print(self.get_winner())
+        if verbose: 
+            self.print_board()
+            print(self.get_winner())
         return(self.get_winner())
