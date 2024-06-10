@@ -19,7 +19,7 @@ def run_simulation(simulations, strategy, opponent):
     wins = 0
     for _ in range(simulations):
         game = mancala.Game({1: player.Genetic('gen', strategy), 2: opponent})
-        result = game.game_loop()
+        result = game.game_loop(verbose=False)
         if result == 1:
             wins += 1
         elif result == 2:

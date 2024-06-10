@@ -10,9 +10,11 @@ player_profiles = (
     player.Human('human'),
     player.Random('random'),
     player.Greedy('greedy'),
-    player.Genetic('genetic_random', train_genetic(generations=10)),
-    player.Genetic('genetic_tournament', train_genetic(generations=10, simulations=1, tournament=100)),
-    player.DQN('dqn', train_dqn(episodes=10))
+    player.Genetic('genetic_random', train_genetic(generations=2, verbose=False)),
+    player.Genetic('genetic_tournament', train_genetic(generations=2, simulations=1, tournament=100, verbose=False)),
+    player.DQN('dqn_random', train_dqn(episodes=2, opponent_types=(player.Random('random'),))),
+    player.DQN('dqn_greedy', train_dqn(episodes=10, opponent_types=(player.Greedy('greedy'),))),
+    player.DQN('dqn_mix', train_dqn(episodes=10)),
 )
 
 def run_experiment(matches_number=100):
@@ -50,7 +52,6 @@ def print_results(matches, matches_number):
             "Player 2 Win Rate": f"{p2_win_rate:.1f}%",
             "Draw Rate": f"{draw_rate:.1f}%"
         })
-
     df = pd.DataFrame(results)
     print(df.to_string(index=False))
     print()

@@ -1,10 +1,10 @@
+import random
+from collections import deque
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import random
-import numpy as np
-from collections import deque
 import mancala
+import player
 
 class DQN(nn.Module):
     def __init__(self, state_size, action_size):
@@ -16,12 +16,10 @@ class DQN(nn.Module):
     def forward(self, x):
         x = torch.relu(self.fc1(x))
         x = torch.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x
+        return self.fc3(x)
 
-class DQNAgent:
+class Agent:
     def __init__(self, state_size, action_size):
-        self.state_size = state_size
         self.action_size = action_size
         self.memory = deque(maxlen=2000)
         self.gamma = 0.95  # discount rate
@@ -31,41 +29,42 @@ class DQNAgent:
         self.learning_rate = 0.001
         self.model = DQN(state_size, action_size)
         self.target_model = DQN(state_size, action_size)
-        self.update_target_model()
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
         self.criterion = nn.MSELoss()
 
     def update_target_model(self):
         self.target_model.load_state_dict(self.model.state_dict())
 
-    def remember(self, state, action, reward, next_state, done):
-        self.memory.append((state, action, reward, next_state, done))
+    def remember(self, state, action, reward, next_state, game_over):
+        self.memory.append((state, action, reward, next_state, game_over))
 
     def act(self, state):
-        if np.random.rand() <= self.epsilon:
+        if random.random() <= self.epsilon:
             return random.randrange(self.action_size)
         state = torch.FloatTensor(state).unsqueeze(0)
-        act_values = self.model(state)
-        return torch.argmax(act_values, dim=1).item()
+        return torch.argmax(self.model(state), dim=1).item()
 
     def replay(self, batch_size):
         minibatch = random.sample(self.memory, batch_size)
-        for state, action, reward, next_state, done in minibatch:
+        total_loss = 0
+        for state, action, reward, next_state, game_over in minibatch:
             target = reward
-            if not done:
+            if not game_over:
                 next_state = torch.FloatTensor(next_state).unsqueeze(0)
                 target += self.gamma * torch.max(self.target_model(next_state)).item()
             state = torch.FloatTensor(state).unsqueeze(0)
-            target_f = self.model(state)
-            target_f = target_f.clone()
-            target_f[0][action] = target
+            adjusted_qvalues = self.model(state).clone()
+            adjusted_qvalues[0][action] = target
             self.optimizer.zero_grad()
             output = self.model(state)
-            loss = self.criterion(output, target_f)
+            loss = self.criterion(output, adjusted_qvalues)
             loss.backward()
             self.optimizer.step()
+            total_loss += loss
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
+
+        return total_loss
 
 def get_state(env):
     return env.board[1] + env.board[2]
@@ -74,14 +73,14 @@ def step(env, player, action):
     if env.is_slot_empty(player, action):
         return get_state(env), -10, False  # Penalize invalid moves
     landing = env.move(player, action)
-    reward = 1 if env.capture(player, landing) else 0
-    done = env.is_side_empty()
+    reward = 10 if env.capture(player, landing) else 0
+    game_over = env.is_side_empty()
     reward += 10 if env.check_bonus_round(landing) else 0
-    reward += 100 if done and env.get_winner() == player else 0
-    reward -= 100 if done and env.get_winner() != player else 0
-    return get_state(env), reward, done
+    reward += 100 if game_over and env.get_winner() == player else 0
+    reward -= 100 if game_over and env.get_winner() != player else 0
+    return get_state(env), reward, game_over
 
-def train_dqn(episodes=10, batch_size=32):
+def train_dqn(episodes=10, batch_size=32, reward_type='', opponent_types=(player.Random('random'), player.Greedy('greedy')), verbose=True):
     """
     Train the DQN agent.
 
@@ -92,24 +91,24 @@ def train_dqn(episodes=10, batch_size=32):
     Returns:
         DQNAgent: Trained DQN agent.
     """
-    print('Started training DQN player')
-    env = mancala.Game({'1': ['AI', None], '2': ['random', None]})
-    state_size = len(get_state(env))
-    action_size = 6  # 6 possible moves
-    agent = DQNAgent(state_size, action_size)
+    if verbose: print('Started training DQN player')
+    state_size = (mancala.BANK + 1) * 2
+    action_size = mancala.BANK
+    agent = Agent(state_size, action_size)
 
     for e in range(episodes):
-        env.reset()
+        opponent = random.choice(opponent_types)
+        env = mancala.Game({'1': player.DQN('dqn'), '2': opponent})
         state = get_state(env)
-        done = False
-        while not done:
+        game_over = False
+        loss = -1
+        while not game_over:
             action = agent.act(state)
-            next_state, reward, done = step(env, 1, action)
-            agent.remember(state, action, reward, next_state, done)
+            next_state, reward, game_over = step(env, 1, action)
+            agent.remember(state, action, reward, next_state, game_over)
             state = next_state
             if len(agent.memory) > batch_size:
-                agent.replay(batch_size)
+                loss = agent.replay(batch_size)
         agent.update_target_model()
-        if e % 10 == 0:
-            print(f"Episode {e}/{episodes}, Epsilon: {agent.epsilon:.2f}")
+        if verbose: print(f"Episode {e}, Epsilon: {agent.epsilon:.2f}, Loss: {loss:.2f}")
     return agent
