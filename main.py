@@ -10,11 +10,11 @@ player_profiles = (
     player.Human('human'),
     player.Random('random'),
     player.Greedy('greedy'),
-    player.Genetic('genetic_random', train_genetic(generations=10, verbose=False)),
-    player.Genetic('genetic_tournament', train_genetic(generations=10, simulations=1, tournament=100, verbose=False)),
-    player.DQN('dqn_random', train_dqn(episodes=10, opponent_types=(player.Random('random'),))),
-    player.DQN('dqn_greedy', train_dqn(episodes=10, opponent_types=(player.Greedy('greedy'),))),
-    player.DQN('dqn_mix', train_dqn(episodes=10)),
+    player.Genetic('genetic_random', train_genetic(generations=2, verbose=True)),
+    player.Genetic('genetic_tournament', train_genetic(generations=2, simulations=1, tournament=100, verbose=True)),
+    player.DQN('dqn_random', train_dqn(episodes=4, opponent_types=(player.Random('random'),))),
+    player.DQN('dqn_greedy', train_dqn(episodes=4, opponent_types=(player.Greedy('greedy'),))),
+    player.DQN('dqn_mix', train_dqn(episodes=4)),
 )
 
 def run_experiment(matches_number=100):

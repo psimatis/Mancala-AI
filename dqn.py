@@ -1,5 +1,6 @@
 import random
 from collections import deque
+import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -21,8 +22,8 @@ class DQN(nn.Module):
 class Agent:
     def __init__(self, state_size, action_size):
         self.action_size = action_size
-        self.memory = deque(maxlen=2000)
-        self.gamma = 0.95  # discount rate
+        self.memory = deque(maxlen=5000)
+        self.gamma = 0.99  # discount rate
         self.epsilon = 1.0  # exploration rate
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.995
@@ -60,11 +61,11 @@ class Agent:
             loss = self.criterion(output, adjusted_qvalues)
             loss.backward()
             self.optimizer.step()
-            total_loss += loss
+            total_loss += loss.item()
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
 
-        return total_loss
+        return total_loss / batch_size
 
 def get_state(env):
     return env.board[1] + env.board[2]
@@ -85,7 +86,14 @@ def step(env, player, action):
             reward -= 100
     return get_state(env), reward, info['game_over'], info['bonus_round']
 
-def train_dqn(episodes=10, batch_size=32, reward_type='', opponent_types=(player.Random('random'), player.Greedy('greedy')), verbose=True):
+def plot_history(history):
+    plt.plot(history)
+    plt.xlabel('Episodes')
+    plt.ylabel('Loss')
+    plt.title('DQN Training Loss')
+    plt.show()
+
+def train_dqn(episodes=10, batch_size=64, reward_type='', opponent_types=(player.Random('random'), player.Greedy('greedy')), verbose=True):
     """
     Train the DQN agent.
 
@@ -96,10 +104,12 @@ def train_dqn(episodes=10, batch_size=32, reward_type='', opponent_types=(player
     Returns:
         DQNAgent: Trained DQN agent.
     """
-    if verbose: print('Started training DQN player')
+    if verbose: 
+        print('Started training DQN player')
     state_size = (mancala.BANK + 1) * 2
     action_size = mancala.BANK
     agent = Agent(state_size, action_size)
+    history = []
 
     for e in range(episodes):
         opponent = random.choice(opponent_types)
@@ -107,20 +117,23 @@ def train_dqn(episodes=10, batch_size=32, reward_type='', opponent_types=(player
         state = get_state(env)
         game_over = False
         loss = -1
+        current_player = 1
         while not game_over:
-            player_side = 1
-            while player_side < 3:
+            if current_player == 1:
                 action = agent.act(state)
-                next_state, reward, game_over, bonus_round = step(env, player_side, action)
+                next_state, reward, game_over, bonus_round = step(env, current_player, action)
                 agent.remember(state, action, reward, next_state, game_over)
                 state = next_state
                 if len(agent.memory) > batch_size:
                     loss = agent.replay(batch_size)
-                if bonus_round or reward == -10:
-                    player_side -= 1
-                player_side += 1
-                if game_over:
-                    break
+            else:
+                action = opponent.act(env, current_player)
+                next_state, _, game_over, bonus_round = step(env, current_player, action)
+            if not bonus_round and not reward == -10:
+                current_player = 2 if current_player == 1 else 1
+
         agent.update_target_model()
-        if verbose: print(f"Episode {e}, Epsilon: {agent.epsilon:.2f}, Loss: {loss:.2f}")
+        history.append(loss)
+        if verbose: print(f"Episode {e}, Memory: {len(agent.memory)}, Epsilon: {agent.epsilon:.2f}, Loss: {loss:.2f}")
+    if verbose: plot_history(history)
     return agent

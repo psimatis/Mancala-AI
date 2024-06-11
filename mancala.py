@@ -5,9 +5,6 @@ class Game:
         self.board = {1: [6,6,6,6,6,6,0], 2: [6,6,6,6,6,6,0]}
         self.players = players
 
-    def reset(self):
-        self.board = {1: [6,6,6,6,6,6,0], 2: [6,6,6,6,6,6,0]}
-
     def is_side_empty(self):
         return any(sum(self.board[side][:BANK]) == 0 for side in self.board)
     
@@ -94,17 +91,16 @@ class Game:
         return info
 
     def game_loop(self, verbose=True):
+        current_player = 1
         while not self.is_side_empty():
-            player_side = 1
-            while player_side < 3:
-                if verbose: 
-                    self.print_board()
-                idx = self.player_choice(player_side)
-                info = self.game_step(player_side, idx, verbose)
-                if info['game_over']:
-                    break
-                if not info['bonus_round']:
-                    player_side += 1
+            if verbose: 
+                self.print_board()
+            idx = self.player_choice(current_player)
+            info = self.game_step(current_player, idx, verbose)
+            if info['game_over']:
+                break
+            if not info['bonus_round']:
+                current_player = 2 if current_player == 1 else 1
         if verbose: 
             self.print_board()
             print('Winner:', self.get_winner())

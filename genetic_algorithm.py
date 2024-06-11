@@ -89,5 +89,5 @@ def train_genetic(generations=10, population_size=100, mutation_rate=0.1, simula
         history[generation] = {'Best Fitness': best_fitness, 'Individual': best_individual}
     if verbose == True:
         print(f'Best strategy: ', population[0])
-        plot_training(history)
+        #plot_training(history)
     return population[0]
