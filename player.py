@@ -5,13 +5,15 @@ class Player:
         self.name = name
         self.strategy = strategy
 
+    def get_valid_moves(self, game, side):
+        return [i for i in range(6) if not game.is_slot_empty(side, i)]
+
     def act(self, game, side):
         raise NotImplementedError("This method should be overridden by subclasses")
 
 class Random(Player):
     def act(self, game, side):
-        valid_moves = [i for i in range(6) if not game.is_slot_empty(side, i)]
-        return random.choice(valid_moves)
+        return random.choice(self.get_valid_moves(game,side))
 
 class Human(Player):
     def act(self, game, side):
@@ -22,7 +24,7 @@ class Human(Player):
 
 class Greedy(Player):
     def act(self, game, side):
-        valid_moves = [i for i in range(6) if not game.is_slot_empty(side, i)]
+        valid_moves = self.get_valid_moves(game,side)
         #check bonus round
         for idx in valid_moves:
             if game.board[side][idx] == 6 - idx:
@@ -46,9 +48,12 @@ class Genetic(Player):
         for idx, _ in scores:
             if not game.is_slot_empty(side, idx):
                 return idx
-        return random.choice([i for i in range(6) if not game.is_slot_empty(side, i)])
+        return random.choice(self.get_valid_moves(game,side))
     
-# TODO: Restrict moves. Maybe use random if it picks an empty slot
 class DQN(Player):
     def act(self, game, side):
-        return self.strategy.act(game.board[1] + game.board[2])
+        idx = self.strategy.act(game.board[1] + game.board[2])
+        valid_moves = self.get_valid_moves(game, side)
+        if idx not in valid_moves:
+            return random.choice(self.get_valid_moves(game,side))
+        return idx
