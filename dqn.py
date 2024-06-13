@@ -22,42 +22,51 @@ class DQN(nn.Module):
         x = torch.relu(self.fc2(x))
         return self.fc3(x)
 
-class Agent:
-    def __init__(self, state_size, action_size):
-        self.neurons = 64
-        self.action_size = action_size
-        self.memory = deque(maxlen=8000)
-        self.gamma = 0.9  # discount rate
-        self.epsilon = 1.0  # exploration rate
-        self.epsilon_min = 0.01
-        self.epsilon_decay = 0.9999
-        self.learning_rate = 0.00001
-        self.model = DQN(state_size, self.neurons, action_size)
-        self.target_model = DQN(state_size, self.neurons, action_size)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
-        self.criterion = nn.SmoothL1Loss()  # Using Huber loss
-        self.prepopulate_memory = 1000
-
-    def update_target_model(self):
-        self.target_model.load_state_dict(self.model.state_dict())
+class Memory:
+    def __init__(self, capacity, prepopulation_size):
+        self.memory = deque(maxlen=capacity)
+        self.prepopulation_size = prepopulation_size
 
     def remember(self, state, action, reward, next_state, game_over):
         self.memory.append((state, action, reward, next_state, game_over))
 
+    def sample(self, batch_size):
+        return random.sample(self.memory, batch_size)
+
+    def __len__(self):
+        return len(self.memory)
+
+class Agent:
+    def __init__(self, state_size, action_size, memory):
+        self.neurons = 64
+        self.action_size = action_size
+        self.memory = memory
+        self.gamma = 0.9
+        self.epsilon = 1.0
+        self.epsilon_min = 0.01
+        self.epsilon_decay = 0.999
+        self.learning_rate = 0.00001
+        self.model = DQN(state_size, self.neurons, action_size)
+        self.target_model = DQN(state_size, self.neurons, action_size)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
+        self.criterion = nn.SmoothL1Loss()
+
+    def update_target_model(self):
+        self.target_model.load_state_dict(self.model.state_dict())
+
+    # TODO: Does the agent know which side he is playing on?
     def act(self, state):
         if random.random() <= self.epsilon:
-            return random.choice([a for a in range(self.action_size) if state[a] > 0])        
+            return random.choice([a for a in range(self.action_size) if state[a] > 0])
         state_tensor = torch.FloatTensor(state).unsqueeze(0)
         q_values = self.model(state_tensor)
-        # Mask invalid actions
         invalid_actions = [a for a in range(self.action_size) if state[a] <= 0]
         q_values[0][invalid_actions] = float('-inf')
         return torch.argmax(q_values, dim=1).item()
 
     def replay(self, batch_size):
-        minibatch = random.sample(self.memory, batch_size)
+        minibatch = self.memory.sample(batch_size)
         states, actions, rewards, next_states, game_overs = zip(*minibatch)
-        
         states = torch.FloatTensor(states)
         next_states = torch.FloatTensor(next_states)
         actions = torch.tensor(actions)
@@ -69,53 +78,53 @@ class Agent:
 
         current_q_values = self.model(states).gather(1, actions.unsqueeze(1))
         next_state_values = torch.zeros(batch_size)
-        
+
         if len(non_final_next_states) > 0:
             next_state_values[non_final_mask] = self.target_model(non_final_next_states).max(1)[0].detach()
-        
+
         expected_q_values = rewards + (next_state_values * self.gamma)
-        
+
         loss = self.criterion(current_q_values, expected_q_values.unsqueeze(1))
-        
+
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-        
+
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
-        
+
         return loss.item()
 
 def get_state(env):
     return env.board[1] + env.board[2]
 
 def step(env, player, action):
-    init_score = env.board[player][mancala.BANK]
+    init_score = env.board[player][mancala.STORE]
     info = env.game_step(player, action, verbose=False)
     reward = 0
 
     if info['capture']:
         reward += 10
     if info['bonus_round']:
-        reward += 5 
+        reward += 5
 
-    current_score = env.board[player][mancala.BANK]
+    current_score = env.board[player][mancala.STORE]
     reward += current_score - init_score
 
     opponent = env.switch_side(player)
-    opponent_score = env.board[opponent][mancala.BANK]
+    opponent_score = env.board[opponent][mancala.STORE]
     reward += current_score - opponent_score
 
     if info['game_over']:
         if env.get_winner() == player:
             reward += 50
         else:
-            reward -= 50 
+            reward -= 50
     return get_state(env), reward, info['game_over'], info['bonus_round']
 
-def run_episode(agent, opponent_types, batch_size, randomize_start=True):
+def run_episode(agent, opponent_types, batch_size):
     opponent = random.choice(opponent_types)
-    if randomize_start and random.random() < 0.5:
+    if random.random() < 0.5:
         env = mancala.Game({1: player.DQN('dqn', agent), 2: opponent})
     else:
         env = mancala.Game({1: opponent, 2: player.DQN('dqn', agent)})
@@ -128,9 +137,9 @@ def run_episode(agent, opponent_types, batch_size, randomize_start=True):
         if current_player == 1:
             action = agent.act(state)
             next_state, reward, game_over, bonus_round = step(env, current_player, action)
-            agent.remember(state, action, reward, next_state, game_over)
+            agent.memory.remember(state, action, reward, next_state, game_over)
             total_reward += reward
-            if len(agent.memory) > agent.prepopulate_memory:
+            if len(agent.memory) > agent.memory.prepopulation_size:
                 loss = agent.replay(batch_size)
         else:
             action = opponent.act(env, current_player)
@@ -141,56 +150,42 @@ def run_episode(agent, opponent_types, batch_size, randomize_start=True):
     return loss, total_reward
 
 def plot_history(history):
-    avg_loss = []
-    avg_reward = []
-    
-    for i in range(0, len(history), 5):
-        batch = history[i:i+5]
-        avg_loss.append(sum([l[0] for l in batch]) / len(batch))
-        avg_reward.append(sum([l[1] for l in batch]) / len(batch))
-    
-    fig, axs = plt.subplots(2, figsize=(10, 10))
-    
-    axs[0].plot(range(0, len(avg_loss) * 5, 5), avg_loss)
+    _, axs = plt.subplots(2, figsize=(10, 10))
+
+    axs[0].plot([l[0] for l in history])
     axs[0].set_xlabel('Episodes')
     axs[0].set_ylabel('Loss')
-    axs[0].set_title('DQN Training Loss (Averaged)')
+    axs[0].set_title('DQN Training Loss')
 
-    axs[1].plot(range(0, len(avg_reward) * 5, 5), avg_reward)
+    axs[1].plot([r[1] for r in history])
     axs[1].set_xlabel('Episodes')
     axs[1].set_ylabel('Reward')
-    axs[1].set_title('DQN Rewards (Averaged)')
+    axs[1].set_title('DQN Rewards')
 
     plt.tight_layout()
     plt.show()
 
-def train_dqn(episodes=5000, batch_size=64, opponent_types=(player.Random('random'), player.Greedy('greedy')), randomize_start=True, verbose=True):
-    """
-    Train the DQN agent.
-
-    Args:
-        episodes (int): Number of episodes to train.
-        batch_size (int): Size of the minibatch for training.
-
-    Returns:
-        DQNAgent: Trained DQN agent.
-    """
-    if verbose: 
+def train_dqn(episodes=1000, batch_size=64, opponent_types=(player.Random('random'), player.Greedy('greedy')), verbose=True):
+    if verbose:
         print('Started training DQN player')
-    state_size = (mancala.BANK + 1) * 2
-    action_size = mancala.BANK
-    agent = Agent(state_size, action_size)
+    state_size = (mancala.STORE + 1) * 2
+    action_size = mancala.STORE
+    memory = Memory(capacity=8000, prepopulation_size=1000)
+    agent = Agent(state_size, action_size, memory)
     history = []
 
-    while len(agent.memory) < agent.prepopulate_memory:
+    while len(agent.memory) < agent.memory.prepopulation_size:
         run_episode(agent, opponent_types, batch_size)
 
     for e in range(episodes):
         loss, reward = run_episode(agent, opponent_types, batch_size)
-        if e % 1 == 1000: agent.update_target_model()
+        if e % 1 == 1000:
+            agent.update_target_model()
 
-        if loss != -1: history.append((loss, reward))
-        if verbose: print(f"Episode {e}, Memory: {len(agent.memory)}, Epsilon: {agent.epsilon:.2f}, Loss: {loss:.2f}, Reward: {reward}")
+        if loss != -1:
+            history.append((loss, reward))
+        if verbose:
+            print(f"Episode: {e} Memory {len(agent.memory)} Epsilon: {agent.epsilon:.2f} Loss: {loss:.2f} Reward: {reward}")
 
     plot_history(history)
     return agent

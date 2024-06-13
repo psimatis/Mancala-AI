@@ -1,93 +1,77 @@
-BANK = 6
+STORE = 6
 
-class Game:   
+class Game:
     def __init__(self, players):
         self.board = {1: [4,4,4,4,4,4,0], 2: [4,4,4,4,4,4,0]}
         self.players = players
 
     def is_side_empty(self):
-        return any(sum(self.board[side][:BANK]) == 0 for side in self.board)
-    
-    def is_slot_empty(self, side, idx):
-        return self.board[side][idx] == 0
-    
+        return any(sum(self.board[side][:STORE]) == 0 for side in self.board)
+
+    def is_pit_empty(self, side, pit):
+        return self.board[side][pit] == 0
+
     def switch_side(self, side):
         return 2 if side == 1 else 1
-    
+
     def player_choice(self, side):
-        player = self.players[side]
-        return player.act(self, side)
-        
-    def move(self, side, start_idx, calculate_landing=False):
-        player_side = side
-        pebbles = self.board[side][start_idx]
-        if not calculate_landing: 
-            self.board[side][start_idx] = 0
-        idx = start_idx
-        while pebbles > 0:
-            idx = (idx + 1) % (BANK + 1)
-            if idx == BANK:
-                if player_side == side:
-                    if not calculate_landing: 
-                        self.board[side][BANK] += 1
-                    pebbles -= 1
-                if pebbles > 0:
-                    idx = -1
+        return self.players[side].act(self, side)
+
+    def move(self, side, pit, simulate=False):
+        stones = self.board[side][pit]
+        if not simulate: 
+            self.board[side][pit] = 0
+        start_side = side
+        while stones > 0:
+            pit = (pit + 1) % (STORE + 1)
+            if pit == STORE:
+                if start_side == side:
+                    if not simulate: 
+                        self.board[side][STORE] += 1
+                    stones -= 1
+                if stones > 0:
+                    pit = -1
                     side = self.switch_side(side)
             else:
-                if not calculate_landing: 
-                    self.board[side][idx] += 1
-                pebbles -= 1
-        return {'side':side, 'idx':idx}
-            
-    def capture(self, player, landing):
-        if player != landing['side']:
+                if not simulate:
+                    self.board[side][pit] += 1
+                stones -= 1
+        return {'side':side, 'pit':pit}
+
+    def capture(self, player_side, landing):
+        if player_side != landing['side'] or self.board[player_side][landing['pit']] > 1:
             return False
-        if self.board[player][landing['idx']] > 1:
-            return False
-        opponent = self.switch_side(player)
-        pebbles = self.board[opponent][landing['idx']]
-        if pebbles > 0:
-            self.board[player][BANK] += pebbles + 1
-            self.board[opponent][landing['idx']] = 0
-            self.board[player][landing['idx']] = 0
+        opponent = self.switch_side(player_side)
+        stones = self.board[opponent][landing['pit']]
+        if stones > 0:
+            self.board[player_side][STORE] += stones + 1
+            self.board[opponent][landing['pit']] = 0
+            self.board[player_side][landing['pit']] = 0
             return True
         return False
 
     def check_bonus_round(self, landing):
-        return landing['idx'] == BANK
-    
-    def get_winner(self):
-        p1_pebbles = sum(self.board[1])
-        p2_pebbles = sum(self.board[2])
-        if p1_pebbles > p2_pebbles:
-            return 1
-        elif p1_pebbles < p2_pebbles:
-            return 2
-        else:
-            return 0
-                
-    def print_board(self):
-        print(self.board[1])
-        print(self.board[2])
-        print('---------')
+        return landing['pit'] == STORE
 
-    def game_step(self, player_side, idx, verbose=True):
-        info = {'landing': None, 'capture': False, 'bonus_round': False, 'game_over': False}
-        if verbose: 
-            print('Player', player_side, 'moves', idx)
-        landing = self.move(player_side, idx)
-        info['landing'] = landing
-        if self.capture(player_side, landing):
-            info['capture'] = True
-            if verbose: 
-                print('Capture!')
-        if self.check_bonus_round(landing):
-            info['bonus_round'] = True
-            if verbose: 
-                print('Bonus round!')
-        if self.is_side_empty():
-            info['game_over'] = True
+    def get_winner(self):
+        p1_stones = sum(self.board[1])
+        p2_stones = sum(self.board[2])
+        if p1_stones > p2_stones:
+            return 1
+        elif p1_stones < p2_stones:
+            return 2
+        return 0
+
+    def game_step(self, player_side, pit, verbose=True):
+        info = {}
+        info['player'] = player_side
+        info['pit'] = pit
+        info['landing'] = self.move(player_side, pit)
+        info['capture'] = self.capture(player_side, info['landing'])
+        info['bonus_round'] = self.check_bonus_round(info['landing'])
+        info['game_over'] = self.is_side_empty()
+        if verbose:
+            print(info)
         return info
 
     def game_loop(self, verbose=True):
@@ -95,8 +79,8 @@ class Game:
         while not self.is_side_empty():
             if verbose: 
                 self.print_board()
-            idx = self.player_choice(current_player)
-            info = self.game_step(current_player, idx, verbose)
+            pit = self.player_choice(current_player)
+            info = self.game_step(current_player, pit, verbose)
             if info['game_over']:
                 break
             if not info['bonus_round']:
@@ -104,4 +88,9 @@ class Game:
         if verbose: 
             self.print_board()
             print('Winner:', self.get_winner())
-        return(self.get_winner())
+        return self.get_winner()
+
+    def print_board(self):
+        print(self.board[1])
+        print(self.board[2])
+        print('---------')

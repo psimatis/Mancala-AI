@@ -4,7 +4,7 @@ import mancala
 import player
 
 def create_individual():
-    return [random.uniform(0, 1) for _ in range(6)]
+    return [random.uniform(0, 1) for _ in range(mancala.STORE)]
 
 def mutate(individual, mutation_rate):
     if random.random() < mutation_rate:
@@ -32,7 +32,7 @@ def run_simulation(simulations, strategy, opponent):
 def fitness_tournament(strategy, opponents, simulations):
     wins = 0
     for opponent in opponents:
-            wins += run_simulation(simulations, strategy, player.Genetic('gen', opponent))
+        wins += run_simulation(simulations, strategy, player.Genetic('gen', opponent))
     return wins
 
 def fitness_random(strategy, simulations):
@@ -88,9 +88,10 @@ def train_genetic(generations=10, population_size=100, mutation_rate=0.1, simula
         else:
             fitness_func = fitness_random
         population, (best_fitness, best_individual) = evolve_population(population, fitness_func, mutation_rate, elitism, simulations, top)
-        if verbose: print(f'Generation {generation}, Best Fitness: {best_fitness}, Individual: {best_individual}')
+        if verbose: 
+            print(f'Generation {generation}, Best Fitness: {best_fitness}, Individual: {best_individual}')
         history[generation] = {'Best Fitness': best_fitness, 'Individual': best_individual}
-    if verbose == True:
-        print(f'Best strategy: ', population[0])
+    if verbose:
+        print(f'Best strategy: {population[0]}')
         #plot_training(history)
     return population[0]
