@@ -42,7 +42,7 @@ class Agent:
         self.action_size = action_size
         self.memory = memory
         self.gamma = 0.9
-        self.epsilon = 1.0
+        self.epsilon = 1.00
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.999
         self.learning_rate = 0.00001
@@ -53,14 +53,16 @@ class Agent:
 
     def update_target_model(self):
         self.target_model.load_state_dict(self.model.state_dict())
+    
+    def act(self, state, player_side):
+        relevant_state = state[:7] if player_side == 1 else state[7:]
 
-    # TODO: Does the agent know which side he is playing on?
-    def act(self, state):
         if random.random() <= self.epsilon:
-            return random.choice([a for a in range(self.action_size) if state[a] > 0])
+            return random.choice([a for a in range(self.action_size) if relevant_state[a] > 0])
+        
         state_tensor = torch.FloatTensor(state).unsqueeze(0)
         q_values = self.model(state_tensor)
-        invalid_actions = [a for a in range(self.action_size) if state[a] <= 0]
+        invalid_actions = [a for a in range(self.action_size) if relevant_state[a] == 0]
         q_values[0][invalid_actions] = float('-inf')
         return torch.argmax(q_values, dim=1).item()
 
@@ -134,8 +136,8 @@ def run_episode(agent, opponent_types, batch_size):
     game_over = False
     current_player = 1
     while not game_over:
-        if current_player == 1:
-            action = agent.act(state)
+        if env.players[current_player].name == 'dqn':
+            action = agent.act(state, current_player)
             next_state, reward, game_over, bonus_round = step(env, current_player, action)
             agent.memory.remember(state, action, reward, next_state, game_over)
             total_reward += reward
@@ -165,12 +167,12 @@ def plot_history(history):
     plt.tight_layout()
     plt.show()
 
-def train_dqn(episodes=1000, batch_size=64, opponent_types=(player.Random('random'), player.Greedy('greedy')), verbose=True):
+def train_dqn(episodes=100000, batch_size=128, opponent_types=(player.Random('random'), player.Greedy('greedy')), verbose=True):
     if verbose:
         print('Started training DQN player')
     state_size = (mancala.STORE + 1) * 2
     action_size = mancala.STORE
-    memory = Memory(capacity=8000, prepopulation_size=1000)
+    memory = Memory(capacity=10000, prepopulation_size=2000)
     agent = Agent(state_size, action_size, memory)
     history = []
 
@@ -179,7 +181,7 @@ def train_dqn(episodes=1000, batch_size=64, opponent_types=(player.Random('rando
 
     for e in range(episodes):
         loss, reward = run_episode(agent, opponent_types, batch_size)
-        if e % 1 == 1000:
+        if e % 5000 == 0:
             agent.update_target_model()
 
         if loss != -1:

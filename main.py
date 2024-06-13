@@ -13,10 +13,10 @@ player_profiles = (
     player.Human('human'),
     player.Random('random'),
     player.Greedy('greedy'),
-    player.Genetic('genetic_random', train_genetic(generations=5)),
-    player.Genetic('genetic_tournament', train_genetic(generations=5, simulations=1, tournament=100)),
-    player.DQN('dqn_random', train_dqn(opponent_types=(player.Random('random'),))),
-    player.DQN('dqn_greedy', train_dqn(opponent_types=(player.Greedy('greedy'),))),
+    player.Genetic('genetic_random', train_genetic(generations=10)),
+    player.Genetic('genetic_tournament', train_genetic(generations=10, simulations=1, tournament=100)),
+    #player.DQN('dqn_random', train_dqn(opponent_types=(player.Random('random'),))),
+    #player.DQN('dqn_greedy', train_dqn(opponent_types=(player.Greedy('greedy'),))),
     player.DQN('dqn_mix', train_dqn()),
 )
 

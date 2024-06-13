@@ -51,4 +51,4 @@ class Genetic(Player):
 
 class DQN(Player):
     def act(self, game, side):
-        return self.agent.act(game.board[1] + game.board[2])
+        return self.agent.act(game.board[1] + game.board[2], side)

@@ -1,9 +1,25 @@
+import sys
+
 STORE = 6
 
 class Game:
     def __init__(self, players):
         self.board = {1: [4,4,4,4,4,4,0], 2: [4,4,4,4,4,4,0]}
         self.players = players
+
+    def health_check(self, info=None):
+        total_stones = sum([sum(self.board[side]) for side in self.board])
+        if total_stones != 48:
+            print('HEALTH CHECK FAILED. TOTAL STONES:', total_stones)
+            self.print_board()
+            sys.exit()
+#        if info:
+ #           if self.board[info['player']][info['pit']] == 0:
+  #              print('HEALTH CHECK FAILED. PICKED PIT WITH NO STONES')
+   #             print(info)
+    #            self.print_board()
+     #           sys.exit()          
+
 
     def is_side_empty(self):
         return any(sum(self.board[side][:STORE]) == 0 for side in self.board)
@@ -41,6 +57,8 @@ class Game:
     def capture(self, player_side, landing):
         if player_side != landing['side'] or self.board[player_side][landing['pit']] > 1:
             return False
+        if landing['pit'] == STORE:
+            return False
         opponent = self.switch_side(player_side)
         stones = self.board[opponent][landing['pit']]
         if stones > 0:
@@ -62,7 +80,7 @@ class Game:
             return 2
         return 0
 
-    def game_step(self, player_side, pit, verbose=True):
+    def game_step(self, player_side, pit, verbose=False):
         info = {}
         info['player'] = player_side
         info['pit'] = pit
@@ -71,13 +89,15 @@ class Game:
         info['bonus_round'] = self.check_bonus_round(info['landing'])
         info['game_over'] = self.is_side_empty()
         if verbose:
+            #self.print_board()
             print(info)
+        self.health_check(info)
         return info
 
     def game_loop(self, verbose=True):
         current_player = 1
         while not self.is_side_empty():
-            if verbose: 
+            if verbose:
                 self.print_board()
             pit = self.player_choice(current_player)
             info = self.game_step(current_player, pit, verbose)
@@ -85,7 +105,8 @@ class Game:
                 break
             if not info['bonus_round']:
                 current_player = 2 if current_player == 1 else 1
-        if verbose: 
+                self.health_check(info)
+        if verbose:
             self.print_board()
             print('Winner:', self.get_winner())
         return self.get_winner()
