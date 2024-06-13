@@ -30,7 +30,7 @@ class Agent:
         self.gamma = 0.9  # discount rate
         self.epsilon = 1.0  # exploration rate
         self.epsilon_min = 0.01
-        self.epsilon_decay = 0.999
+        self.epsilon_decay = 0.9999
         self.learning_rate = 0.00001
         self.model = DQN(state_size, self.neurons, action_size)
         self.target_model = DQN(state_size, self.neurons, action_size)
@@ -113,7 +113,12 @@ def step(env, player, action):
             reward -= 50 
     return get_state(env), reward, info['game_over'], info['bonus_round']
 
-def run_episode(agent, opponent, env, batch_size):
+def run_episode(agent, opponent_types, batch_size, randomize_start=True):
+    opponent = random.choice(opponent_types)
+    if randomize_start and random.random() < 0.5:
+        env = mancala.Game({1: player.DQN('dqn', agent), 2: opponent})
+    else:
+        env = mancala.Game({1: opponent, 2: player.DQN('dqn', agent)})
     state = get_state(env)
     loss = -1
     total_reward = 0
@@ -136,7 +141,6 @@ def run_episode(agent, opponent, env, batch_size):
     return loss, total_reward
 
 def plot_history(history):
-    # Calculate the averages for every 5 episodes
     avg_loss = []
     avg_reward = []
     
@@ -145,7 +149,6 @@ def plot_history(history):
         avg_loss.append(sum([l[0] for l in batch]) / len(batch))
         avg_reward.append(sum([l[1] for l in batch]) / len(batch))
     
-    # Plot the averaged history
     fig, axs = plt.subplots(2, figsize=(10, 10))
     
     axs[0].plot(range(0, len(avg_loss) * 5, 5), avg_loss)
@@ -161,7 +164,7 @@ def plot_history(history):
     plt.tight_layout()
     plt.show()
 
-def train_dqn(episodes=800, batch_size=64, opponent_types=(player.Random('random'), player.Greedy('greedy')), verbose=True):
+def train_dqn(episodes=5000, batch_size=64, opponent_types=(player.Random('random'), player.Greedy('greedy')), randomize_start=True, verbose=True):
     """
     Train the DQN agent.
 
@@ -180,15 +183,11 @@ def train_dqn(episodes=800, batch_size=64, opponent_types=(player.Random('random
     history = []
 
     while len(agent.memory) < agent.prepopulate_memory:
-        opponent = random.choice(opponent_types)
-        env = mancala.Game({1: player.DQN('dqn', agent), 2: opponent})
-        run_episode(agent, opponent, env, batch_size)
+        run_episode(agent, opponent_types, batch_size)
 
     for e in range(episodes):
-        opponent = random.choice(opponent_types)
-        env = mancala.Game({1: player.DQN('dqn', agent), 2: opponent})
-        loss, reward = run_episode(agent, opponent, env, batch_size)
-        if e % 1 == 0: agent.update_target_model()
+        loss, reward = run_episode(agent, opponent_types, batch_size)
+        if e % 1 == 1000: agent.update_target_model()
 
         if loss != -1: history.append((loss, reward))
         if verbose: print(f"Episode {e}, Memory: {len(agent.memory)}, Epsilon: {agent.epsilon:.2f}, Loss: {loss:.2f}, Reward: {reward}")

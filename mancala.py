@@ -2,7 +2,7 @@ BANK = 6
 
 class Game:   
     def __init__(self, players):
-        self.board = {1: [6,6,6,6,6,6,0], 2: [6,6,6,6,6,6,0]}
+        self.board = {1: [4,4,4,4,4,4,0], 2: [4,4,4,4,4,4,0]}
         self.players = players
 
     def is_side_empty(self):

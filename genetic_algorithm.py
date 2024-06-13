@@ -18,7 +18,10 @@ def crossover(parent1, parent2):
 def run_simulation(simulations, strategy, opponent):
     wins = 0
     for _ in range(simulations):
-        game = mancala.Game({1: player.Genetic('gen', strategy), 2: opponent})
+        if random.random() < 0.5:
+            game = mancala.Game({1: opponent, 2: player.Genetic('gen', strategy)})
+        else:
+            game = mancala.Game({1: player.Genetic('gen', strategy), 2: opponent})
         result = game.game_loop(verbose=False)
         if result == 1:
             wins += 1
@@ -29,7 +32,7 @@ def run_simulation(simulations, strategy, opponent):
 def fitness_tournament(strategy, opponents, simulations):
     wins = 0
     for opponent in opponents:
-        wins += run_simulation(simulations, strategy, player.Genetic('gen', opponent))
+            wins += run_simulation(simulations, strategy, player.Genetic('gen', opponent))
     return wins
 
 def fitness_random(strategy, simulations):

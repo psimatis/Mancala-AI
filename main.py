@@ -1,3 +1,4 @@
+import random
 import pandas as pd
 from collections import defaultdict 
 from mancala import Game
@@ -64,10 +65,13 @@ def print_results(matches, matches_number):
         print(grouped.to_string(index=False))
         print()
 
-def play_mancala():
+def play_mancala(randomize_start=True):
     for p in player_profiles[-1:]:
         print('Playing against:', p.name)
-        game = Game({1: player_profiles[0], 2: p})
+        if randomize_start and random.random() < 0.5:
+            game = Game({1: player_profiles[0], 2: p})
+        else:
+            game = Game({1: p, 2: player_profiles[0]})
         game.game_loop(verbose=True)
 
 if __name__ == "__main__":
