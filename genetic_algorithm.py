@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import mancala
 import player
 
+random.seed(0)
+
 def create_individual():
     return [random.uniform(0, 1) for _ in range(mancala.STORE)]
 
@@ -18,10 +20,7 @@ def crossover(parent1, parent2):
 def run_simulation(simulations, strategy, opponent):
     wins = 0
     for _ in range(simulations):
-        if random.random() < 0.5:
-            game = mancala.Game({1: opponent, 2: player.Genetic('gen', strategy)})
-        else:
-            game = mancala.Game({1: player.Genetic('gen', strategy), 2: opponent})
+        game = mancala.Game({1: player.Genetic('gen', strategy), 2: opponent})
         result = game.game_loop(verbose=False)
         if result == 1:
             wins += 1

@@ -1,4 +1,3 @@
-import random
 from collections import defaultdict
 import pandas as pd
 from mancala import Game
@@ -13,10 +12,10 @@ player_profiles = (
     player.Human('human'),
     player.Random('random'),
     player.Greedy('greedy'),
-    player.Genetic('genetic_random', train_genetic(generations=10)),
-    player.Genetic('genetic_tournament', train_genetic(generations=10, simulations=1, tournament=100)),
-    #player.DQN('dqn_random', train_dqn(opponent_types=(player.Random('random'),))),
-    #player.DQN('dqn_greedy', train_dqn(opponent_types=(player.Greedy('greedy'),))),
+    player.Genetic('genetic_random', train_genetic(generations=5)),
+    player.Genetic('genetic_tournament', train_genetic(generations=5, simulations=1, tournament=100)),
+    player.DQN('dqn_random', train_dqn(opponent_types=(player.Random('random'),))),
+    player.DQN('dqn_greedy', train_dqn(opponent_types=(player.Greedy('greedy'),))),
     player.DQN('dqn_mix', train_dqn()),
 )
 
@@ -28,7 +27,7 @@ def run_experiment():
                 continue
             for _ in range(MATCHES_NUMBER):
                 game = Game({1: p1, 2: p2})
-                winner = game.game_loop(verbose=False)
+                winner = game.game_loop()
                 match_name = p1.name + ' vs ' + p2.name
                 if winner == 0:
                     matches[match_name]['draw'] += 1
@@ -67,13 +66,10 @@ def print_results(matches):
         print(grouped.to_string(index=False))
         print()
 
-def play_mancala(randomize_start=True):
+def play_mancala():
     for p in player_profiles[-1:]:
         print('Playing against:', p.name)
-        if randomize_start and random.random() < 0.5:
-            game = Game({1: player_profiles[0], 2: p})
-        else:
-            game = Game({1: p, 2: player_profiles[0]})
+        game = Game({1: p, 2: player_profiles[0]})
         game.game_loop(verbose=True)
 
 if __name__ == "__main__":

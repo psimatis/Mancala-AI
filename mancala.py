@@ -7,18 +7,12 @@ class Game:
         self.board = {1: [4,4,4,4,4,4,0], 2: [4,4,4,4,4,4,0]}
         self.players = players
 
-    def health_check(self, info=None):
+    def health_check(self):
         total_stones = sum([sum(self.board[side]) for side in self.board])
         if total_stones != 48:
             print('HEALTH CHECK FAILED. TOTAL STONES:', total_stones)
             self.print_board()
             sys.exit()
-#        if info:
- #           if self.board[info['player']][info['pit']] == 0:
-  #              print('HEALTH CHECK FAILED. PICKED PIT WITH NO STONES')
-   #             print(info)
-    #            self.print_board()
-     #           sys.exit()          
 
 
     def is_side_empty(self):
@@ -89,12 +83,12 @@ class Game:
         info['bonus_round'] = self.check_bonus_round(info['landing'])
         info['game_over'] = self.is_side_empty()
         if verbose:
-            #self.print_board()
+            self.print_board()
             print(info)
-        self.health_check(info)
+        self.health_check()
         return info
 
-    def game_loop(self, verbose=True):
+    def game_loop(self, verbose=False):
         current_player = 1
         while not self.is_side_empty():
             if verbose:
@@ -105,8 +99,9 @@ class Game:
                 break
             if not info['bonus_round']:
                 current_player = 2 if current_player == 1 else 1
-                self.health_check(info)
+                self.health_check()
         if verbose:
+            print(info)
             self.print_board()
             print('Winner:', self.get_winner())
         return self.get_winner()
