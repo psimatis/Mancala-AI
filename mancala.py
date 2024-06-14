@@ -7,6 +7,11 @@ class Game:
         self.board = {1: [4,4,4,4,4,4,0], 2: [4,4,4,4,4,4,0]}
         self.players = players
 
+    def copy(self):
+        g = Game(self.players)
+        g.board = {1: self.board[1][:], 2: self.board[2][:]}
+        return g
+
     def health_check(self):
         total_stones = sum([sum(self.board[side]) for side in self.board])
         if total_stones != 48:
@@ -65,6 +70,17 @@ class Game:
             self.board[player_side][landing['pit']] = 0
             return True
         return False
+    
+    def capture_exposure(self, player):
+        exposures = set()
+        opponent = self.switch_side(player)
+        possible_moves = [pit for pit in range(STORE) if self.board[opponent][pit] > 0] 
+        for p in possible_moves:
+            simulation = self.copy()
+            landing = simulation.move(opponent, p)
+            if simulation.capture(opponent, landing):
+                exposures.add((landing['pit'], self.board[player][landing['pit']]))
+        return sum([s[1] for s in exposures])
 
     def check_bonus_round(self, landing):
         return landing['pit'] == STORE
@@ -78,7 +94,7 @@ class Game:
             return 2
         return 0
 
-    def game_step(self, player_side, pit, verbose=False):
+    def game_step(self, player_side, pit, verbose=True):
         info = {}
         info['player'] = player_side
         info['pit'] = pit
@@ -86,10 +102,11 @@ class Game:
         info['capture'] = self.capture(player_side, info['landing'])
         info['bonus_round'] = self.check_bonus_round(info['landing'])
         info['game_over'] = self.is_side_empty()
+        info['capture_exposure'] = self.capture_exposure(player_side)
         if verbose:
-            self.print_board()
-            print(info)
+            self.print_board(info)
         self.health_check()
+
         return info
 
     def game_loop(self, verbose=False):
@@ -107,7 +124,8 @@ class Game:
             print('Winner:', self.get_winner())
         return self.get_winner()
 
-    def print_board(self):
+    def print_board(self, info=None):
+        if info: print(info)
         print(self.board[1])
         print(self.board[2])
         print('---------')

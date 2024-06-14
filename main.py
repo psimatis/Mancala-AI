@@ -46,9 +46,9 @@ def print_results(matches):
         results.append({
             "Player 1": p1,
             "Player 2": p2,
-            "Player 1 Win Rate": f"{p1_win_rate:.1f}%",
-            "Player 2 Win Rate": f"{p2_win_rate:.1f}%",
-            "Draw Rate": f"{draw_rate:.1f}%"
+            "Player 1 Win Rate": p1_win_rate,
+            "Player 2 Win Rate": p2_win_rate,
+            "Draw Rate": draw_rate
         })
     df = pd.DataFrame(results)
     print(df.to_string(index=False))

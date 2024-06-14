@@ -52,7 +52,7 @@ class EGreedy:
         return False
 
 class Agent:
-    def __init__(self, epsilon_min=0.01, epsilon_decay=0.99, batch_size=512, capacity=10000, gamma=0.9, learning_rate=0.0001, neurons=32):
+    def __init__(self, epsilon_min=0.01, epsilon_decay=0.99, batch_size=512, capacity=10000, gamma=0.9, learning_rate=0.001, neurons=32):
         self.state_size = (mancala.STORE + 1) * 2
         self.action_size = mancala.STORE
         self.e_greedy = EGreedy(1, epsilon_min, epsilon_decay)
@@ -72,9 +72,8 @@ class Agent:
         if self.e_greedy.explore():
             return random.choice([a for a in range(self.action_size) if state[a] > 0])
 
-        state_tensor = torch.FloatTensor(state).unsqueeze(0)
-        q_values = self.policy_model(state_tensor)
         invalid_actions = [a for a in range(self.action_size) if state[a] == 0]
+        q_values = self.policy_model(torch.FloatTensor(state).unsqueeze(0))
         q_values[0][invalid_actions] = float("-inf")
         return torch.argmax(q_values, dim=1).item()
 
@@ -106,14 +105,16 @@ class Agent:
         opponent_score = env.board[env.switch_side(player_side)][mancala.STORE]
         reward = 2 * current_score - opponent_score - init_score
 
+        reward -= info['capture_exposure']
+
         if info["game_over"]:
             if env.get_winner() == player_side:
-                reward += 10
+                reward += 50
             else:
-                reward -= 10
+                reward -= 50
 
         if info["capture"] or info["bonus_round"]:
-            reward += 5
+            reward += 10
         return env.get_state(), reward, info["game_over"], info["bonus_round"]
 
     def run_episode(self, opponent_types):
@@ -156,7 +157,7 @@ class Agent:
         axs[1].set_title("DQN Rewards")
         plt.show()
 
-    def train_dqn(self, opponents, episodes=1000, update_frequency=200, verbose=True):
+    def train_dqn(self, opponents, episodes=200, update_frequency=50, verbose=True):
         print('Training DQN agent')
         steps = 0
         history = []
@@ -173,4 +174,6 @@ class Agent:
 
 if __name__ == "__main__":
     agent = Agent()
-    player.DQN('dqn_random', agent.train_dqn(opponents=(player.Random(),)))
+    dqn_player = player.DQN('dqn_random', agent.train_dqn(opponents=(player.Random(),)))
+    game = mancala.Game({1: dqn_player, 2: player.Human()})
+    game.game_loop(verbose=True)
