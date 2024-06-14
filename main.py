@@ -3,26 +3,25 @@ import pandas as pd
 from mancala import Game
 import player
 from genetic_algorithm import train_genetic
-from dqn import train_dqn
+import dqn
 
 MATCHES_NUMBER = 100
 
-# Initialize players
-player_profiles = (
+players = (
     player.Human('human'),
     player.Random('random'),
     player.Greedy('greedy'),
-    player.Genetic('genetic_random', train_genetic(generations=5)),
-    player.Genetic('genetic_tournament', train_genetic(generations=5, simulations=1, tournament=100)),
-    player.DQN('dqn_random', train_dqn(opponent_types=(player.Random('random'),))),
-    player.DQN('dqn_greedy', train_dqn(opponent_types=(player.Greedy('greedy'),))),
-    player.DQN('dqn_mix', train_dqn()),
+    player.Genetic('gen_random', train_genetic(generations=5)),
+    player.Genetic('gen_tournament', train_genetic(generations=5, simulations=1, tournament=100)),
+    player.DQN('dqn_random', dqn.Agent().train_dqn(opponents=(player.Random('random'),))),
+    player.DQN('dqn_greedy', dqn.Agent().train_dqn(opponents=(player.Greedy('greedy'),))),
+    player.DQN('dqn_mix', dqn.Agent().train_dqn(opponents=(player.Greedy(), player.Random())))
 )
 
 def run_experiment():
     matches = defaultdict(lambda: defaultdict(int))
-    for p1 in player_profiles[1:]:
-        for p2 in player_profiles[1:]:
+    for p1 in players[1:]:
+        for p2 in players[1:]:
             if p1 == p2:
                 continue
             for _ in range(MATCHES_NUMBER):
@@ -41,12 +40,9 @@ def print_results(matches):
     results = []
     for match_name, results_dict in matches.items():
         p1, p2 = match_name.split(' vs ')
-        p1_wins = results_dict[p1]
-        p2_wins = results_dict[p2]
-        draws = results_dict['draw']
-        p1_win_rate = (p1_wins / MATCHES_NUMBER) * 100
-        p2_win_rate = (p2_wins / MATCHES_NUMBER) * 100
-        draw_rate = (draws / MATCHES_NUMBER) * 100
+        p1_win_rate = (results_dict[p1] / MATCHES_NUMBER) * 100
+        p2_win_rate = (results_dict[p2] / MATCHES_NUMBER) * 100
+        draw_rate = (results_dict['draw'] / MATCHES_NUMBER) * 100
         results.append({
             "Player 1": p1,
             "Player 2": p2,
@@ -67,9 +63,9 @@ def print_results(matches):
         print()
 
 def play_mancala():
-    for p in player_profiles[-1:]:
+    for p in players[-1:]:
         print('Playing against:', p.name)
-        game = Game({1: p, 2: player_profiles[0]})
+        game = Game({1: p, 2: players[0]})
         game.game_loop(verbose=True)
 
 if __name__ == "__main__":

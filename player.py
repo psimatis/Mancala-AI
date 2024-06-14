@@ -3,7 +3,7 @@ import random
 random.seed(0)
 
 class Player:
-    def __init__(self, name, agent=None):
+    def __init__(self, name=None, agent=None):
         self.name = name
         self.agent = agent
 

@@ -14,6 +14,10 @@ class Game:
             self.print_board()
             sys.exit()
 
+    def get_state(self, flip=False):
+        if flip:
+            return self.board[2] +self.board[1]
+        return self.board[1] + self.board[2]
 
     def is_side_empty(self):
         return any(sum(self.board[side][:STORE]) == 0 for side in self.board)
@@ -29,7 +33,7 @@ class Game:
 
     def move(self, side, pit, simulate=False):
         stones = self.board[side][pit]
-        if not simulate: 
+        if not simulate:
             self.board[side][pit] = 0
         start_side = side
         while stones > 0:
@@ -70,7 +74,7 @@ class Game:
         p2_stones = sum(self.board[2])
         if p1_stones > p2_stones:
             return 1
-        elif p1_stones < p2_stones:
+        if p1_stones < p2_stones:
             return 2
         return 0
 
@@ -89,20 +93,17 @@ class Game:
         return info
 
     def game_loop(self, verbose=False):
+        if verbose:
+            self.print_board()
         current_player = 1
         while not self.is_side_empty():
-            if verbose:
-                self.print_board()
             pit = self.player_choice(current_player)
             info = self.game_step(current_player, pit, verbose)
             if info['game_over']:
                 break
             if not info['bonus_round']:
                 current_player = 2 if current_player == 1 else 1
-                self.health_check()
         if verbose:
-            print(info)
-            self.print_board()
             print('Winner:', self.get_winner())
         return self.get_winner()
 
