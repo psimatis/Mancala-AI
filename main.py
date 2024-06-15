@@ -14,11 +14,11 @@ players = [
     Human(),
     Random(),
     Greedy(),
-    MinimaxAgent('minimax', 5),
-    ga.GeneticAgent('gen_random', ga.train_genetic(generations=5)),
-    ga.GeneticAgent('gen_tournament', ga.train_genetic(generations=5, simulations=1, tournament=100)),
-    dqn.DQNAgent('dqn_random', opponents=[Random()]).train_dqn(),
-    dqn.DQNAgent('dqn_greedy', opponents=[Greedy()]).train_dqn(),
+    MinimaxAgent('minimax', 6),
+    ga.GeneticAgent('gen_random', ga.train_genetic(generations=5, verbose=False)),
+    ga.GeneticAgent('gen_tournament', ga.train_genetic(generations=5, simulations=1, tournament=100, verbose=False)),
+    dqn.DQNAgent('dqn_random', verbose=False).train_dqn(),
+    dqn.DQNAgent('dqn_greedy', opponents=[Greedy()], verbose=False).train_dqn(),
 ]
 
 players.append(dqn.DQNAgent('dqn_mix', opponents=players[1:-1]).train_dqn())
