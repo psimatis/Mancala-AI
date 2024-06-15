@@ -1,4 +1,5 @@
 import random
+from mancala import STORE
 
 random.seed(0)
 
@@ -8,7 +9,7 @@ class Player:
         self.agent = agent
 
     def get_valid_moves(self, game, side):
-        return [i for i in range(6) if not game.is_pit_empty(side, i)]
+        return [i for i in range(STORE) if not game.is_pit_empty(side, i)]
 
     def act(self, game, side):
         raise NotImplementedError("This method should be overridden by subclasses")
@@ -20,7 +21,7 @@ class Random(Player):
 class Human(Player):
     def act(self, game, side):
         pit = int(input("Enter pit number (0-5): "))
-        while pit not in range(6) or game.is_pit_empty(side, pit):
+        while pit not in range(STORE) or game.is_pit_empty(side, pit):
             pit = int(input("Invalid choice. Enter pit number (0-5) that has stones: "))
         return pit
 
@@ -29,7 +30,7 @@ class Greedy(Player):
         valid_moves = self.get_valid_moves(game,side)
         # check bonus round
         for pit in valid_moves:
-            if game.board[side][pit] == 6 - pit:
+            if game.board[side][pit] == STORE - pit:
                 return pit
         # check capture
         for pit in valid_moves:
@@ -38,13 +39,13 @@ class Greedy(Player):
                 return pit
         # check add to bank
         for pit in valid_moves:
-            if game.board[side][pit] > 6 - pit:
+            if game.board[side][pit] > STORE - pit:
                 return pit
         return random.choice(valid_moves)
 
 class Genetic(Player):
     def act(self, game, side):
-        scores = [(pit, self.agent[pit] * game.board[side][pit]) for pit in range(6)]
+        scores = [(pit, self.agent[pit] * game.board[side][pit]) for pit in range(STORE)]
         scores.sort(key=lambda x: x[1], reverse=True)
         for pit, _ in scores:
             if not game.is_pit_empty(side, pit):

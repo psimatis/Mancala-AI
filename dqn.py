@@ -37,7 +37,7 @@ class Memory:
         return len(self.memory)
 
 class EGreedy:
-    def __init__(self, epsilon=1.00, epsilon_min=0.01, decay=0.99):
+    def __init__(self, epsilon, epsilon_min, decay):
         self.epsilon = epsilon
         self.epsilon_min = epsilon_min
         self.decay = decay
@@ -52,7 +52,7 @@ class EGreedy:
         return False
 
 class Agent:
-    def __init__(self, epsilon_min=0.01, epsilon_decay=0.99, batch_size=512, capacity=10000, gamma=0.9, learning_rate=0.001, neurons=32):
+    def __init__(self, epsilon_min=0.01, epsilon_decay=0.999, batch_size=512, capacity=10000, gamma=0.9, learning_rate=0.001, neurons=32):
         self.state_size = (mancala.STORE + 1) * 2
         self.action_size = mancala.STORE
         self.e_greedy = EGreedy(1, epsilon_min, epsilon_decay)
@@ -105,7 +105,8 @@ class Agent:
         opponent_score = env.board[env.switch_side(player_side)][mancala.STORE]
         reward = 2 * current_score - opponent_score - init_score
 
-        reward -= info['capture_exposure']
+        if not info["bonus_round"]:
+            reward -= info['capture_exposure']
 
         if info["game_over"]:
             if env.get_winner() == player_side:

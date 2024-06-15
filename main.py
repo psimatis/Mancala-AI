@@ -7,7 +7,7 @@ import dqn
 
 MATCHES_NUMBER = 100
 
-players = (
+players = [
     player.Human('human'),
     player.Random('random'),
     player.Greedy('greedy'),
@@ -16,7 +16,10 @@ players = (
     player.DQN('dqn_random', dqn.Agent().train_dqn(opponents=(player.Random('random'),))),
     player.DQN('dqn_greedy', dqn.Agent().train_dqn(opponents=(player.Greedy('greedy'),))),
     player.DQN('dqn_mix', dqn.Agent().train_dqn(opponents=(player.Greedy(), player.Random())))
-)
+]
+
+players.append(player.DQN('dqn_gen', dqn.Agent().train_dqn(opponents=players[3:5])))
+players.append(player.DQN('dqn_megamix', dqn.Agent().train_dqn(opponents=players[1:-1])))
 
 def run_experiment():
     matches = defaultdict(lambda: defaultdict(int))
@@ -65,8 +68,7 @@ def print_results(matches):
 def play_mancala():
     for p in players[-1:]:
         print('Playing against:', p.name)
-        game = Game({1: p, 2: players[0]})
-        game.game_loop(verbose=True)
+        Game({1: p, 2: players[0]}).game_loop(verbose=True)
 
 if __name__ == "__main__":
     print_results(run_experiment())
