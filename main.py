@@ -1,36 +1,39 @@
 from collections import defaultdict
 import pandas as pd
 from mancala import Game
-import player
-from genetic_algorithm import train_genetic
+from human_player import Human
+from random_player import Random 
+from greedy_player import Greedy
+from minimax import MinimaxAgent
+import genetic_algorithm as ga
 import dqn
 
 MATCHES_NUMBER = 100
 
 players = [
-    player.Human('human'),
-    player.Random('random'),
-    player.Greedy('greedy'),
-    player.Genetic('gen_random', train_genetic(generations=5)),
-    player.Genetic('gen_tournament', train_genetic(generations=5, simulations=1, tournament=100)),
-    player.DQN('dqn_random', dqn.Agent().train_dqn(opponents=(player.Random('random'),))),
-    player.DQN('dqn_greedy', dqn.Agent().train_dqn(opponents=(player.Greedy('greedy'),))),
-    player.DQN('dqn_mix', dqn.Agent().train_dqn(opponents=(player.Greedy(), player.Random())))
+    Human(),
+    Random(),
+    Greedy(),
+    MinimaxAgent('minimax', 5),
+    ga.GeneticAgent('gen_random', ga.train_genetic(generations=5)),
+    ga.GeneticAgent('gen_tournament', ga.train_genetic(generations=5, simulations=1, tournament=100)),
+    dqn.DQNAgent('dqn_random', opponents=[Random()]).train_dqn(),
+    dqn.DQNAgent('dqn_greedy', opponents=[Greedy()]).train_dqn(),
 ]
 
-players.append(player.DQN('dqn_gen', dqn.Agent().train_dqn(opponents=players[3:5])))
-players.append(player.DQN('dqn_megamix', dqn.Agent().train_dqn(opponents=players[1:-1])))
+players.append(dqn.DQNAgent('dqn_mix', opponents=players[1:-1]).train_dqn())
 
 def run_experiment():
+    print('Running experimenrs')
     matches = defaultdict(lambda: defaultdict(int))
     for p1 in players[1:]:
         for p2 in players[1:]:
             if p1 == p2:
                 continue
+            match_name = p1.name + ' vs ' + p2.name
+            print(match_name)
             for _ in range(MATCHES_NUMBER):
-                game = Game({1: p1, 2: p2})
-                winner = game.game_loop()
-                match_name = p1.name + ' vs ' + p2.name
+                winner = Game({1: p1, 2: p2}).game_loop()
                 if winner == 0:
                     matches[match_name]['draw'] += 1
                 elif winner == 1:

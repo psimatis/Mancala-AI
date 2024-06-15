@@ -1,9 +1,22 @@
 import random
 import matplotlib.pyplot as plt
 import mancala
-import player
+from random_player import Random
 
 random.seed(0)
+
+class GeneticAgent():
+    def __init__(self, name='genetic', agent=None):
+        self.name = name
+        self.agent = agent
+
+    def act(self, game, side):
+        scores = [(pit, self.agent[pit] * game.board[side][pit]) for pit in range(mancala.STORE)]
+        scores.sort(key=lambda x: x[1], reverse=True)
+        for pit, _ in scores:
+            if not game.is_pit_empty(side, pit):
+                return pit
+        return random.choice(self.get_valid_moves(game,side))
 
 def create_individual():
     return [random.uniform(0, 1) for _ in range(mancala.STORE)]
@@ -20,7 +33,7 @@ def crossover(parent1, parent2):
 def run_simulation(simulations, strategy, opponent):
     wins = 0
     for _ in range(simulations):
-        game = mancala.Game({1: player.Genetic('gen', strategy), 2: opponent})
+        game = mancala.Game({1: GeneticAgent('gen', strategy), 2: opponent})
         result = game.game_loop(verbose=False)
         if result == 1:
             wins += 1
@@ -31,11 +44,11 @@ def run_simulation(simulations, strategy, opponent):
 def fitness_tournament(strategy, opponents, simulations):
     wins = 0
     for opponent in opponents:
-        wins += run_simulation(simulations, strategy, player.Genetic('gen', opponent))
+        wins += run_simulation(simulations, strategy, GeneticAgent('gen', opponent))
     return wins
 
 def fitness_random(strategy, simulations):
-    return run_simulation(simulations, strategy, player.Random('random'))
+    return run_simulation(simulations, strategy, Random())
 
 def evolve_population(population, fitness_func, mutation_rate, elitism, simulations, top):
     fitness_scores = [(fitness_func(individual, simulations), individual) for individual in population]
@@ -60,22 +73,6 @@ def plot_training(history):
     plt.show()
 
 def train_genetic(generations=10, population_size=100, mutation_rate=0.1, simulations=100, elitism=2, tournament=0, top=10, verbose=True):
-    """
-    Run the genetic algorithm to evolve strategies.
-
-    Args:
-        generations (int): Number of generations to run the algorithm.
-        population_size (int): Size of the population.
-        mutation_rate (float): Probability of mutation.
-        simulations (int): Number of simulations per fitness evaluation.
-        elitism (int): Number of top individuals to carry over to the next generation.
-        tournament (int): Number of opponents for tournament selection (0 for random selection).
-        top (int): Number of top individuals for selection and crossover.
-        verbose (bool): If True, print progress and results.
-
-    Returns:
-        list: The best evolved strategy.
-    """
     if verbose:
         training_type = 'tournament' if tournament else 'random'
         print(f'Training {training_type}-based genetic algorithm')
@@ -92,5 +89,5 @@ def train_genetic(generations=10, population_size=100, mutation_rate=0.1, simula
         history[generation] = {'Best Fitness': best_fitness, 'Individual': best_individual}
     if verbose:
         print(f'Best strategy: {population[0]}')
-        #plot_training(history)
+        plot_training(history)
     return population[0]

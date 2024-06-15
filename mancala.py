@@ -19,12 +19,10 @@ class Game:
             self.print_board()
             sys.exit()
 
-    def get_state(self, flip=False):
-        if flip:
-            return self.board[2] +self.board[1]
+    def get_state(self):
         return self.board[1] + self.board[2]
 
-    def is_side_empty(self):
+    def is_game_over(self):
         return any(sum(self.board[side][:STORE]) == 0 for side in self.board)
 
     def is_pit_empty(self, side, pit):
@@ -101,7 +99,7 @@ class Game:
         info['landing'] = self.move(player_side, pit)
         info['capture'] = self.capture(player_side, info['landing'])
         info['bonus_round'] = self.check_bonus_round(info['landing'])
-        info['game_over'] = self.is_side_empty()
+        info['game_over'] = self.is_game_over()
         info['capture_exposure'] = self.capture_exposure(player_side)
         if verbose:
             self.print_board(info)
@@ -113,7 +111,7 @@ class Game:
         if verbose:
             self.print_board()
         current_player = 1
-        while not self.is_side_empty():
+        while not self.is_game_over():
             pit = self.player_choice(current_player)
             info = self.game_step(current_player, pit, verbose)
             if info['game_over']:

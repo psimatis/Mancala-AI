@@ -5,7 +5,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import mancala
-import player
+from human_player import Human
+from random_player import Random
 
 random.seed(0)
 torch.manual_seed(0)
@@ -51,8 +52,9 @@ class EGreedy:
             return True
         return False
 
-class Agent:
-    def __init__(self, epsilon_min=0.01, epsilon_decay=0.999, batch_size=512, capacity=10000, gamma=0.9, learning_rate=0.001, neurons=32):
+class DQNAgent:
+    def __init__(self, name='dqn', opponents=[Random()], episodes=200, update_frequency=50, epsilon_min=0.01, epsilon_decay=0.999, batch_size=512, capacity=10000, gamma=0.9, learning_rate=0.001, neurons=32, verbose=True):
+        self.name = name
         self.state_size = (mancala.STORE + 1) * 2
         self.action_size = mancala.STORE
         self.e_greedy = EGreedy(1, epsilon_min, epsilon_decay)
@@ -62,11 +64,16 @@ class Agent:
         self.target_model = DQN(self.state_size, neurons, self.action_size)
         self.optimizer = optim.Adam(self.policy_model.parameters(), lr=learning_rate)
         self.criterion = nn.SmoothL1Loss()
+        self.opponents = opponents
+        self.episodes = episodes
+        self.update_frequency = update_frequency
+        self.verbose = verbose
 
     def update_target_model(self):
         self.target_model.load_state_dict(self.policy_model.state_dict())
 
-    def act(self, state, side):
+    def act(self, game, side):
+        state = game.get_state()
         state = state[7:] + state[:7] if side == 2 else state
 
         if self.e_greedy.explore():
@@ -120,16 +127,16 @@ class Agent:
 
     def run_episode(self, opponent_types):
         opponent = random.choice(opponent_types)
-        env = mancala.Game({1: player.DQN("dqn", self), 2: opponent})
-        state = env.get_state(env)
+        env = mancala.Game({1: DQNAgent('dqn', self), 2: opponent})
+        state = env.get_state()
         info = {'avg_loss': 0, 'avg_reward': 0, 'steps': 0}
         game_over = False
         current_player = 1
 
         while not game_over:
             info['steps'] += 1
-            if env.players[current_player].name == "dqn":
-                action = self.act(state, current_player)
+            if env.players[current_player].name == 'dqn':
+                action = self.act(env, current_player)
                 next_state, reward, game_over, bonus_round = self.step(env, current_player, action)
                 self.memory.remember(state, action, reward, next_state, game_over)
                 info['avg_reward'] += reward
@@ -148,33 +155,33 @@ class Agent:
     def plot_history(self, history):
         _, axs = plt.subplots(2, figsize=(10, 10))
         axs[0].plot([l[0] for l in history])
-        axs[0].set_xlabel("Episodes")
-        axs[0].set_ylabel("Loss")
-        axs[0].set_title("DQN Training Loss")
+        axs[0].set_xlabel('Episodes')
+        axs[0].set_ylabel('Loss')
+        axs[0].set_title('DQN Training Loss')
 
         axs[1].plot([r[1] for r in history])
-        axs[1].set_xlabel("Episodes")
-        axs[1].set_ylabel("Reward")
-        axs[1].set_title("DQN Rewards")
+        axs[1].set_xlabel('Episodes')
+        axs[1].set_ylabel('Reward')
+        axs[1].set_title('DQN Rewards')
         plt.show()
 
-    def train_dqn(self, opponents, episodes=200, update_frequency=50, verbose=True):
-        print('Training DQN agent')
+    def train_dqn(self):
+        if self.verbose:
+            print('Training DQN agent against:', [o.name for o in self.opponents])
         steps = 0
         history = []
-        for e in range(episodes):
-            info = self.run_episode(opponents)
+        for e in range(self.episodes):
+            info = self.run_episode(self.opponents)
             steps += info['steps']
-            if e % update_frequency == 0:
+            if e % self.update_frequency == 0:
                 self.update_target_model()
             history.append((info['avg_loss'], info['avg_reward']))
-            if verbose:
+            if self.verbose:
                 print(f"Episode: {e} Steps: {steps} Epsilon: {self.e_greedy.epsilon:.2f} Loss: {info['avg_loss']:.2f} Reward: {info['avg_reward']:.2f}")
-        self.plot_history(history)
+        if self.verbose:
+            self.plot_history(history)
         return self
 
 if __name__ == "__main__":
-    agent = Agent()
-    dqn_player = player.DQN('dqn_random', agent.train_dqn(opponents=(player.Random(),)))
-    game = mancala.Game({1: dqn_player, 2: player.Human()})
-    game.game_loop(verbose=True)
+    dqn_player = DQNAgent().train_dqn()
+    mancala.Game({1: dqn_player, 2: Human()}).game_loop(verbose=True)
