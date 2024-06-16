@@ -7,7 +7,7 @@ from human_player import Human
 random.seed(0)
 
 class MinimaxAgent:
-    def __init__(self, name='minimax', depth=5, evaluation='store'):
+    def __init__(self, name='minimax', depth=3, evaluation='store'):
         self.name = name
         self.depth = depth
         self.evaluation = evaluation

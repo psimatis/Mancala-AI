@@ -14,14 +14,14 @@ players = [
     Human(),
     Random(),
     Greedy(),
-    MinimaxAgent('minimax_3_store', 3),
-    ga.GeneticAgent('gen_random', ga.train_genetic(generations=5, verbose=False)),
-    ga.GeneticAgent('gen_tournament', ga.train_genetic(generations=5, simulations=1, tournament=100, verbose=False)),
-    dqn.DQNAgent('dqn_random', verbose=False).train_dqn(),
-    dqn.DQNAgent('dqn_greedy', opponents=[Greedy()], verbose=False).train_dqn(),
+    MinimaxAgent(),
+    ga.GeneticAgent('ga_random', ga.train_genetic(generations=5, verbose=False)),
+    ga.GeneticAgent('ga_tournament', ga.train_genetic(generations=5, simulations=1, tournament=100, verbose=False)),
+    dqn.DQNAgent('dqn_random', verbose=True).train_dqn(),
+    dqn.DQNAgent('dqn_greedy', opponents=[Greedy()], verbose=True).train_dqn(),
 ]
 
-players.append(dqn.DQNAgent('dqn_mix', opponents=players[1:], verbose=False).train_dqn())
+players.append(dqn.DQNAgent('dqn_mix', opponents=players[1:], verbose=True).train_dqn())
 
 def run_experiment():
     print('Running experimenrs')

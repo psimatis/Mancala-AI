@@ -53,7 +53,7 @@ class EGreedy:
         return False
 
 class DQNAgent:
-    def __init__(self, name='dqn', opponents=[Random()], episodes=200, update_frequency=50, epsilon_min=0.01, epsilon_decay=0.999, batch_size=512, capacity=10000, gamma=0.9, learning_rate=0.001, neurons=32, verbose=True):
+    def __init__(self, name='dqn', opponents=[Random()], episodes=200, epsilon_min=0.01, epsilon_decay=0.99, batch_size=512, capacity=10000, gamma=0.9, learning_rate=0.001, neurons=32, tau=0.01, verbose=True):
         self.name = name
         self.state_size = (mancala.STORE + 1) * 2
         self.action_size = mancala.STORE
@@ -66,11 +66,32 @@ class DQNAgent:
         self.criterion = nn.SmoothL1Loss()
         self.opponents = opponents
         self.episodes = episodes
-        self.update_frequency = update_frequency
+        self.tau = tau
         self.verbose = verbose
+        self.fixed_states = self.collect_eval_states()
+
+    def collect_eval_states(self, num_states=1000):
+        states = []
+        while len(states) < num_states:
+            env = mancala.Game({1: Random(), 2: Random()})
+            current_player = 1
+            for _ in range(num_states):
+                state = env.get_state()
+                states.append(state)
+                action = env.players[current_player].act(env, current_player)
+                info = env.game_step(current_player, action, verbose=False)
+                if not info['bonus_round']:
+                    current_player = 2 if current_player == 1 else 1
+                if info['game_over']:
+                    break
+        return states
 
     def update_target_model(self):
-        self.target_model.load_state_dict(self.policy_model.state_dict())
+        target_net_state_dict = self.target_model.state_dict()
+        policy_net_state_dict = self.policy_model.state_dict()
+        for key in policy_net_state_dict:
+            target_net_state_dict[key] = policy_net_state_dict[key] * self.tau + target_net_state_dict[key] * (1 - self.tau)
+        self.target_model.load_state_dict(target_net_state_dict)
 
     def act(self, game, side):
         state = game.get_state()
@@ -151,18 +172,24 @@ class DQNAgent:
         info['avg_reward'] /= info['steps']
         info['avg_loss'] /= info['steps']
         return info
+    
+    def compute_average_max_q(self):
+        max_q_values = []
+        for state in self.fixed_states:
+            q_values = self.policy_model(torch.FloatTensor(state).unsqueeze(0))
+            max_q_values.append(torch.max(q_values).item())
+        return sum(max_q_values)/len(max_q_values)
 
     def plot_history(self, history):
-        _, axs = plt.subplots(2, figsize=(10, 10))
-        axs[0].plot([l[0] for l in history])
-        axs[0].set_xlabel('Episodes')
-        axs[0].set_ylabel('Loss')
-        axs[0].set_title('DQN Training Loss')
+        _, axs = plt.subplots(3, figsize=(8, 13))
+        labels = ('Loss', 'Reward', 'Average Max Q')
 
-        axs[1].plot([r[1] for r in history])
-        axs[1].set_xlabel('Episodes')
-        axs[1].set_ylabel('Reward')
-        axs[1].set_title('DQN Rewards')
+        for i in range(len(labels)):
+            axs[i].plot([h[i] for h in history])
+            axs[i].set_xlabel('Episodes')
+            axs[i].set_ylabel(labels[i])
+
+        plt.tight_layout()
         plt.show()
 
     def train_dqn(self):
@@ -173,11 +200,11 @@ class DQNAgent:
         for e in range(self.episodes):
             info = self.run_episode(self.opponents)
             steps += info['steps']
-            if e % self.update_frequency == 0:
-                self.update_target_model()
-            history.append((info['avg_loss'], info['avg_reward']))
+            self.update_target_model()
+            avg_max_q = self.compute_average_max_q()
+            history.append((info['avg_loss'], info['avg_reward'], avg_max_q))
             if self.verbose:
-                print(f"Episode: {e} Steps: {steps} Epsilon: {self.e_greedy.epsilon:.2f} Loss: {info['avg_loss']:.2f} Reward: {info['avg_reward']:.2f}")
+                print(f"Episode: {e} Steps: {steps} Epsilon: {self.e_greedy.epsilon:.2f} Loss: {info['avg_loss']:.2f} Reward: {info['avg_reward']:.2f} Q: {avg_max_q:.2f}")
         if self.verbose:
             self.plot_history(history)
         return self
