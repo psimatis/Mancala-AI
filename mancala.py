@@ -21,6 +21,11 @@ class Game:
 
     def get_state(self):
         return self.board[1] + self.board[2]
+    
+    def get_difference(self, player_side):
+        if player_side == 1:
+            return sum(self.board[1]) - sum(self.board[2])
+        return sum(self.board[2]) - sum(self.board[1])
 
     def is_game_over(self):
         return any(sum(self.board[side][:STORE]) == 0 for side in self.board)

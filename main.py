@@ -14,14 +14,14 @@ players = [
     Human(),
     Random(),
     Greedy(),
-    MinimaxAgent('minimax', 6),
+    MinimaxAgent('minimax_3_store', 3),
     ga.GeneticAgent('gen_random', ga.train_genetic(generations=5, verbose=False)),
     ga.GeneticAgent('gen_tournament', ga.train_genetic(generations=5, simulations=1, tournament=100, verbose=False)),
     dqn.DQNAgent('dqn_random', verbose=False).train_dqn(),
     dqn.DQNAgent('dqn_greedy', opponents=[Greedy()], verbose=False).train_dqn(),
 ]
 
-players.append(dqn.DQNAgent('dqn_mix', opponents=players[1:-1]).train_dqn())
+players.append(dqn.DQNAgent('dqn_mix', opponents=players[1:], verbose=False).train_dqn())
 
 def run_experiment():
     print('Running experimenrs')
@@ -62,11 +62,18 @@ def print_results(matches):
 
     df['P1 Wins'] = df['Player 1 Win Rate'] > df['Player 2 Win Rate']
     df['P2 Wins'] = df['Player 1 Win Rate'] < df['Player 2 Win Rate']
-    for i in ('1','2'):
-        grouped = df.groupby('Player ' + i)['P' + i + ' Wins'].sum().reset_index()
-        grouped = grouped.sort_values(by='P' + i + ' Wins', ascending=False).reset_index(drop=True)
-        print(grouped.to_string(index=False))
-        print()
+
+    grouped_p1 = df.groupby('Player 1')['P1 Wins'].sum().reset_index()
+    grouped_p1.columns = ['Player', 'P1 Wins']
+
+    grouped_p2 = df.groupby('Player 2')['P2 Wins'].sum().reset_index()
+    grouped_p2.columns = ['Player', 'P2 Wins']
+
+    combined = pd.merge(grouped_p1, grouped_p2, on='Player', how='outer').fillna(0)
+    combined['Total Wins'] = combined['P1 Wins'] + combined['P2 Wins']
+    combined = combined.sort_values(by='Total Wins', ascending=False).reset_index(drop=True)
+    print(combined.to_string(index=False))
+    print()
 
 def play_mancala():
     for p in players[-1:]:
