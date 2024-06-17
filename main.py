@@ -1,6 +1,6 @@
 from mancala import Game
 from players.human import Human
-from players.random_player import Random
+from players.naive import Naive
 from players.greedy import Greedy
 from players.minimax import Minimax
 import players.genetic_algorithm as ga
@@ -13,15 +13,15 @@ MATCHES_NUMBER = 100
 def initialize_players(verbose):
     players = [
         Human(),
-        Random(),
+        Naive(),
         Greedy(),
         Minimax(),
         ga.GeneticAgent('ga_random', ga.train_genetic(generations=5, verbose=verbose)),
-        ga.GeneticAgent('ga_tournament', ga.train_genetic(generations=5, simulations=1, tournament=100, verbose=verbose)),
+        # ga.GeneticAgent('ga_tournament', ga.train_genetic(generations=5, simulations=1, tournament=100, verbose=verbose)),
         dqn.DQNAgent('dqn_random', verbose=verbose).train_dqn(),
-        dqn.DQNAgent('dqn_greedy', opponents=[Greedy()], verbose=verbose).train_dqn(),
+        # dqn.DQNAgent('dqn_greedy', opponents=[Greedy()], verbose=verbose).train_dqn(),
     ]
-    players.append(dqn.DQNAgent('dqn_mix', opponents=players[1:], verbose=verbose).train_dqn())
+    # players.append(dqn.DQNAgent('dqn_mix', opponents=players[1:], verbose=verbose).train_dqn())
     return players
 
 def play_mancala(players):

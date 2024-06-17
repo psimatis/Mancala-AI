@@ -2,7 +2,7 @@ import random
 
 random.seed(0)
 
-class Random:
+class Naive:
     def __init__(self, name='random'):
         self.name = name
 

@@ -1,7 +1,7 @@
 import random
 import matplotlib.pyplot as plt
 import mancala
-from players.random_player import Random
+from players.naive import Naive
 
 random.seed(0)
 
@@ -48,7 +48,7 @@ def fitness_tournament(strategy, opponents, simulations):
     return wins
 
 def fitness_random(strategy, simulations):
-    return run_simulation(simulations, strategy, Random())
+    return run_simulation(simulations, strategy, Naive())
 
 def evolve_population(population, fitness_func, mutation_rate, elitism, simulations, top):
     fitness_scores = [(fitness_func(individual, simulations), individual) for individual in population]

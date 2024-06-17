@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.optim as optim
 import mancala
 from players.human import Human
-from players.random_player import Random
+from players.naive import Naive
 
 random.seed(0)
 torch.manual_seed(0)
@@ -53,7 +53,7 @@ class EGreedy:
         return False
 
 class DQNAgent:
-    def __init__(self, name='dqn', opponents=[Random()], episodes=200, epsilon_min=0.01, epsilon_decay=0.99, batch_size=512, capacity=10000, gamma=0.9, learning_rate=0.001, neurons=32, tau=0.01, verbose=True):
+    def __init__(self, name='dqn', opponents=[Naive()], episodes=200, epsilon_min=0.01, epsilon_decay=0.99, batch_size=512, capacity=10000, gamma=0.9, learning_rate=0.001, neurons=32, tau=0.01, verbose=True):
         self.name = name
         self.state_size = (mancala.STORE + 1) * 2
         self.action_size = mancala.STORE
@@ -73,7 +73,7 @@ class DQNAgent:
     def collect_eval_states(self, num_states=1000):
         states = []
         while len(states) < num_states:
-            env = mancala.Game({1: Random(), 2: Random()})
+            env = mancala.Game({1: Naive(), 2: Naive()})
             for _ in range(num_states):
                 states.append(env.get_state())
                 action = env.players[env.current_player].act(env)
