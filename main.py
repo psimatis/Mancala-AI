@@ -17,11 +17,11 @@ def initialize_players(verbose):
         Greedy(),
         Minimax(),
         ga.GeneticAgent('ga_random', ga.train_genetic(generations=5, verbose=verbose)),
-        # ga.GeneticAgent('ga_tournament', ga.train_genetic(generations=5, simulations=1, tournament=100, verbose=verbose)),
+        ga.GeneticAgent('ga_tournament', ga.train_genetic(generations=5, simulations=1, tournament=100, verbose=verbose)),
         dqn.DQNAgent('dqn_random', verbose=verbose).train_dqn(),
-        # dqn.DQNAgent('dqn_greedy', opponents=[Greedy()], verbose=verbose).train_dqn(),
+        dqn.DQNAgent('dqn_greedy', opponents=[Greedy()], verbose=verbose).train_dqn(),
     ]
-    # players.append(dqn.DQNAgent('dqn_mix', opponents=players[1:], verbose=verbose).train_dqn())
+    players.append(dqn.DQNAgent('dqn_mix', opponents=players[1:], verbose=verbose).train_dqn())
     return players
 
 def play_mancala(players):

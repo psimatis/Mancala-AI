@@ -16,7 +16,7 @@ class GeneticAgent():
         for pit, _ in scores:
             if not game.is_pit_empty(game.current_player, pit):
                 return pit
-        return random.choice(game.get_valid_moves(game.current_player))
+        return random.choice(game.get_valid_moves())
 
 def create_individual():
     return [random.uniform(0, 1) for _ in range(mancala.STORE)]

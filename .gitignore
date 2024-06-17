@@ -2,3 +2,4 @@
 .pylintrc
 todo
 players/agents
+/agents/__pycache__

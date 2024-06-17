@@ -93,7 +93,7 @@ class DQNAgent:
         state = state[7:] + state[:7] if game.current_player == 2 else state
 
         if self.e_greedy.explore():
-            return random.choice(game.get_valid_moves(game.current_player))
+            return random.choice(game.get_valid_moves())
 
         invalid_actions = [a for a in range(self.action_size) if state[a] == 0]
         q_values = self.policy_model(torch.FloatTensor(state).unsqueeze(0))

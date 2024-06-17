@@ -18,7 +18,7 @@ class Minimax:
         if depth == 0 or game.is_game_over():
             return self.evaluate(game, side)
 
-        valid_moves = game.get_valid_moves(side, reverse=True)
+        valid_moves = game.get_valid_moves(reverse=True)
         if maximizing_player:
             max_val = -float('inf')
             for move in valid_moves:
@@ -42,7 +42,7 @@ class Minimax:
 
     def act(self, game):
         maximizing_player = True if game.current_player == 1 else False
-        valid_moves = game.get_valid_moves(game.current_player, reverse=True)
+        valid_moves = game.get_valid_moves(reverse=True)
         best_score = -float('inf')
         best_move = valid_moves[-1]
 

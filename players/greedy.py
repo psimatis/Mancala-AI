@@ -7,7 +7,7 @@ class Greedy():
 
     def act(self, game):
         player = game.current_player
-        valid_moves = game.get_valid_moves(player)
+        valid_moves = game.get_valid_moves()
         # check bonus round
         for pit in valid_moves:
             if game.board[player][pit] == STORE - pit:

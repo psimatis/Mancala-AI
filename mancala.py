@@ -26,7 +26,8 @@ class Game:
     def get_current_player(self):
         return self.current_player
     
-    def get_valid_moves(self, side, reverse=False):
+    def get_valid_moves(self, reverse=False):
+        side = self.current_player
         if reverse:
             return [i for i in reversed(range(STORE)) if not self.is_pit_empty(side, i)]
         return [i for i in range(STORE) if not self.is_pit_empty(side, i)]
