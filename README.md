@@ -4,8 +4,7 @@ I keep beating the Nintendo Switch AI, thus I wrote my own.
 The repository includes the complete game and supports multiple opponent strategies.
 
 ## Usage
-```bash
-python main.py
+    python main.py
 
 ## Strategies/Opponents supported:
 1. Deep Q-Learning Network (DQN)[^2]: Uses reinforcement learning (i.e., learns from rewards) to develop a strategy.
@@ -42,11 +41,6 @@ To facilitate experimentation the non-trivial opponents are highly configurable.
 
 ### Minimax Parameters
 1. **depth** (int): The maximum depth of the game tree that the algorithm will explore.
-
-## Observations/Todo
-* The training of the Tournament Genetic Algorithm is unstable. I assume it is sometimes stuck in local minima.
-* Add more AI opponents (e.g., DQN).
-* I still beat all the AIs, if someone can give me a challenging AI I will appreciate it.
 
 ## References
 [^1]: Mancala: https://en.wikipedia.org/wiki/Mancala
