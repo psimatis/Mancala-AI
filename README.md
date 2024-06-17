@@ -15,7 +15,7 @@ The repository includes the complete game and supports multiple opponent strateg
 1. Naive: Selects moves randomly.
 1. Human: You play the game.
 
-## Paramameters
+## Parameters
 To facilitate experimentation the non-trivial opponents are highly configurable.
 
 ### DQN
@@ -30,7 +30,7 @@ To facilitate experimentation the non-trivial opponents are highly configurable.
 1. **neurons** (int): Number of neurons in each hidden layer of the neural network.
 1. **tau** (float): Soft update parameter for updating the target network.
 
-### Genetic Algorithm Parameters
+### Genetic Algorithm
 1. **generations** (int): Number of iterations the algorithm will run.
 1. **population_size** (int): Number of individuals in the population.
 1. **mutation_rate** (float): Probability of mutation occurring in an individual.
@@ -39,7 +39,7 @@ To facilitate experimentation the non-trivial opponents are highly configurable.
 1. **tournament** (int): Size of the tournament selection pool (0 for random selection).
 1. **top** (int): Number of best individuals used for selection and breeding.
 
-### Minimax Parameters
+### Minimax
 1. **depth** (int): The maximum depth of the game tree that the algorithm will explore.
 
 ## References
