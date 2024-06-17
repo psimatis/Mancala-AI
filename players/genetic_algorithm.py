@@ -1,7 +1,7 @@
 import random
 import matplotlib.pyplot as plt
 import mancala
-from random_player import Random
+from players.random_player import Random
 
 random.seed(0)
 
@@ -10,13 +10,13 @@ class GeneticAgent():
         self.name = name
         self.agent = agent
 
-    def act(self, game, side):
-        scores = [(pit, self.agent[pit] * game.board[side][pit]) for pit in range(mancala.STORE)]
+    def act(self, game):
+        scores = [(pit, self.agent[pit] * game.board[game.current_player][pit]) for pit in range(mancala.STORE)]
         scores.sort(key=lambda x: x[1], reverse=True)
         for pit, _ in scores:
-            if not game.is_pit_empty(side, pit):
+            if not game.is_pit_empty(game.current_player, pit):
                 return pit
-        return random.choice(self.get_valid_moves(game,side))
+        return random.choice(game.get_valid_moves(game.current_player))
 
 def create_individual():
     return [random.uniform(0, 1) for _ in range(mancala.STORE)]
@@ -33,7 +33,7 @@ def crossover(parent1, parent2):
 def run_simulation(simulations, strategy, opponent):
     wins = 0
     for _ in range(simulations):
-        game = mancala.Game({1: GeneticAgent('gen', strategy), 2: opponent})
+        game = mancala.Game({1: opponent, 2: GeneticAgent('gen', strategy)})
         result = game.game_loop(verbose=False)
         if result == 1:
             wins += 1

@@ -6,6 +6,7 @@ class Game:
     def __init__(self, players):
         self.board = {1: [4,4,4,4,4,4,0], 2: [4,4,4,4,4,4,0]}
         self.players = players
+        self.current_player = 1
 
     def copy(self):
         g = Game(self.players)
@@ -22,10 +23,13 @@ class Game:
     def get_state(self):
         return self.board[1] + self.board[2]
     
-    def get_difference(self, player_side):
-        if player_side == 1:
-            return sum(self.board[1]) - sum(self.board[2])
-        return sum(self.board[2]) - sum(self.board[1])
+    def get_current_player(self):
+        return self.current_player
+    
+    def get_valid_moves(self, side, reverse=False):
+        if reverse:
+            return [i for i in reversed(range(STORE)) if not self.is_pit_empty(side, i)]
+        return [i for i in range(STORE) if not self.is_pit_empty(side, i)]
 
     def is_game_over(self):
         return any(sum(self.board[side][:STORE]) == 0 for side in self.board)
@@ -36,8 +40,8 @@ class Game:
     def switch_side(self, side):
         return 2 if side == 1 else 1
 
-    def player_choice(self, side):
-        return self.players[side].act(self, side)
+    def player_choice(self):
+        return self.players[self.current_player].act(self)
 
     def move(self, side, pit, simulate=False):
         stones = self.board[side][pit]
@@ -60,29 +64,29 @@ class Game:
                 stones -= 1
         return {'side':side, 'pit':pit}
 
-    def capture(self, player_side, landing):
-        if player_side != landing['side'] or self.board[player_side][landing['pit']] > 1:
+    def capture(self, side, landing):
+        if side != landing['side'] or self.board[side][landing['pit']] > 1:
             return False
         if landing['pit'] == STORE:
             return False
-        opponent = self.switch_side(player_side)
+        opponent = self.switch_side(side)
         stones = self.board[opponent][landing['pit']]
         if stones > 0:
-            self.board[player_side][STORE] += stones + 1
+            self.board[side][STORE] += stones + 1
             self.board[opponent][landing['pit']] = 0
-            self.board[player_side][landing['pit']] = 0
+            self.board[side][landing['pit']] = 0
             return True
         return False
     
-    def capture_exposure(self, player):
+    def capture_exposure(self):
         exposures = set()
-        opponent = self.switch_side(player)
+        opponent = self.switch_side(self.current_player)
         possible_moves = [pit for pit in range(STORE) if self.board[opponent][pit] > 0] 
         for p in possible_moves:
             simulation = self.copy()
             landing = simulation.move(opponent, p)
             if simulation.capture(opponent, landing):
-                exposures.add((landing['pit'], self.board[player][landing['pit']]))
+                exposures.add((landing['pit'], self.board[self.current_player][landing['pit']]))
         return sum([s[1] for s in exposures])
 
     def check_bonus_round(self, landing):
@@ -97,32 +101,29 @@ class Game:
             return 2
         return 0
 
-    def game_step(self, player_side, pit, verbose=True):
+    def step(self, pit, verbose=True):
         info = {}
-        info['player'] = player_side
+        info['player'] = self.current_player
         info['pit'] = pit
-        info['landing'] = self.move(player_side, pit)
-        info['capture'] = self.capture(player_side, info['landing'])
+        info['landing'] = self.move(self.current_player, pit)
+        info['capture'] = self.capture(self.current_player, info['landing'])
         info['bonus_round'] = self.check_bonus_round(info['landing'])
         info['game_over'] = self.is_game_over()
-        info['capture_exposure'] = self.capture_exposure(player_side)
+        info['capture_exposure'] = self.capture_exposure()
         if verbose:
             self.print_board(info)
         self.health_check()
-
+        if not info['bonus_round']:
+            self.current_player = 2 if self.current_player == 1 else 1
         return info
 
     def game_loop(self, verbose=False):
         if verbose:
             self.print_board()
-        current_player = 1
         while not self.is_game_over():
-            pit = self.player_choice(current_player)
-            info = self.game_step(current_player, pit, verbose)
+            info = self.step(self.player_choice(), verbose)
             if info['game_over']:
                 break
-            if not info['bonus_round']:
-                current_player = 2 if current_player == 1 else 1
         if verbose:
             print('Winner:', self.get_winner())
         return self.get_winner()

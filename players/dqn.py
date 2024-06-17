@@ -5,8 +5,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import mancala
-from human_player import Human
-from random_player import Random
+from players.human import Human
+from players.random_player import Random
 
 random.seed(0)
 torch.manual_seed(0)
@@ -74,15 +74,10 @@ class DQNAgent:
         states = []
         while len(states) < num_states:
             env = mancala.Game({1: Random(), 2: Random()})
-            current_player = 1
             for _ in range(num_states):
-                state = env.get_state()
-                states.append(state)
-                action = env.players[current_player].act(env, current_player)
-                info = env.game_step(current_player, action, verbose=False)
-                if not info['bonus_round']:
-                    current_player = 2 if current_player == 1 else 1
-                if info['game_over']:
+                states.append(env.get_state())
+                action = env.players[env.current_player].act(env)
+                if env.step(action, verbose=False)['game_over']:
                     break
         return states
 
@@ -93,12 +88,12 @@ class DQNAgent:
             target_net_state_dict[key] = policy_net_state_dict[key] * self.tau + target_net_state_dict[key] * (1 - self.tau)
         self.target_model.load_state_dict(target_net_state_dict)
 
-    def act(self, game, side):
+    def act(self, game):
         state = game.get_state()
-        state = state[7:] + state[:7] if side == 2 else state
+        state = state[7:] + state[:7] if game.current_player == 2 else state
 
         if self.e_greedy.explore():
-            return random.choice([a for a in range(self.action_size) if state[a] > 0])
+            return random.choice(game.get_valid_moves(game.current_player))
 
         invalid_actions = [a for a in range(self.action_size) if state[a] == 0]
         q_values = self.policy_model(torch.FloatTensor(state).unsqueeze(0))
@@ -125,26 +120,26 @@ class DQNAgent:
         self.e_greedy.update()
         return loss.item()
 
-    def step(self, env, player_side, action):
-        init_score = env.board[player_side][mancala.STORE]
-        info = env.game_step(player_side, action, verbose=False)
+    def step(self, env, action):
+        init_score = env.board[env.current_player][mancala.STORE]
+        info = env.step(action, verbose=False)
 
-        current_score = env.board[player_side][mancala.STORE]
-        opponent_score = env.board[env.switch_side(player_side)][mancala.STORE]
+        current_score = env.board[env.current_player][mancala.STORE]
+        opponent_score = env.board[env.switch_side(env.current_player)][mancala.STORE]
         reward = 2 * current_score - opponent_score - init_score
 
         if not info["bonus_round"]:
             reward -= info['capture_exposure']
 
         if info["game_over"]:
-            if env.get_winner() == player_side:
+            if env.get_winner() == env.current_player:
                 reward += 50
             else:
                 reward -= 50
 
         if info["capture"] or info["bonus_round"]:
             reward += 10
-        return env.get_state(), reward, info["game_over"], info["bonus_round"]
+        return env.get_state(), reward, info["game_over"]
 
     def run_episode(self, opponent_types):
         opponent = random.choice(opponent_types)
@@ -152,22 +147,19 @@ class DQNAgent:
         state = env.get_state()
         info = {'avg_loss': 0, 'avg_reward': 0, 'steps': 0}
         game_over = False
-        current_player = 1
 
         while not game_over:
             info['steps'] += 1
-            if env.players[current_player].name == 'dqn':
-                action = self.act(env, current_player)
-                next_state, reward, game_over, bonus_round = self.step(env, current_player, action)
+            if 'dqn' in env.players[env.current_player].name:
+                action = self.act(env)
+                next_state, reward, game_over = self.step(env, action)
                 self.memory.remember(state, action, reward, next_state, game_over)
                 info['avg_reward'] += reward
                 if len(self.memory) > self.memory.batch_size:
                     info['avg_loss'] += self.replay()
             else:
-                action = opponent.act(env, current_player)
-                next_state, _, game_over, bonus_round = self.step(env, current_player, action)
-            if not bonus_round:
-                current_player = 2 if current_player == 1 else 1
+                action = opponent.act(env)
+                next_state, _, game_over = self.step(env, action)
             state = next_state
         info['avg_reward'] /= info['steps']
         info['avg_loss'] /= info['steps']
@@ -183,13 +175,11 @@ class DQNAgent:
     def plot_history(self, history):
         _, axs = plt.subplots(3, figsize=(8, 13))
         labels = ('Loss', 'Reward', 'Average Max Q')
-
         for i in range(len(labels)):
             axs[i].plot([h[i] for h in history])
             axs[i].set_xlabel('Episodes')
             axs[i].set_ylabel(labels[i])
-
-        plt.tight_layout()
+        plt.grid(True)
         plt.show()
 
     def train_dqn(self):
@@ -208,7 +198,3 @@ class DQNAgent:
         if self.verbose:
             self.plot_history(history)
         return self
-
-if __name__ == "__main__":
-    dqn_player = DQNAgent().train_dqn()
-    mancala.Game({1: dqn_player, 2: Human()}).game_loop(verbose=True)
