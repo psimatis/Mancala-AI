@@ -11,6 +11,7 @@ class Game:
     def copy(self):
         g = Game(self.players)
         g.board = {1: self.board[1][:], 2: self.board[2][:]}
+        g.current_player = self.current_player
         return g
 
     def health_check(self):
@@ -102,7 +103,7 @@ class Game:
             return 2
         return 0
 
-    def step(self, pit, verbose=True):
+    def step(self, pit, verbose=False):
         info = {}
         info['player'] = self.current_player
         info['pit'] = pit

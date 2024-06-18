@@ -8,14 +8,16 @@ import players.dqn as dqn
 from experiment import run_experiment
 
 SHOW_TRAINING = True
-MATCHES_NUMBER = 100
+GAMES = 100
 
 def initialize_players(verbose):
     players = [
         Human(),
         Naive(),
         Greedy(),
-        Minimax(),
+        Minimax(name='mm2', depth=2),
+        Minimax(name='mm3', depth=3),
+        Minimax(name='mm4', depth=4),
         ga.GeneticAgent('ga_random', ga.train_genetic(generations=5, verbose=verbose)),
         ga.GeneticAgent('ga_tournament', ga.train_genetic(generations=5, simulations=1, tournament=100, verbose=verbose)),
         dqn.DQNAgent('dqn_random', verbose=verbose).train_dqn(),
@@ -32,5 +34,5 @@ def play_mancala(players):
 
 if __name__ == "__main__":
     players = initialize_players(verbose=SHOW_TRAINING)
-    run_experiment(players, MATCHES_NUMBER)
-    play_mancala(players)
+    run_experiment(players, GAMES)
+    # play_mancala(players)
