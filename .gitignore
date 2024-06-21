@@ -4,3 +4,8 @@ todo
 players/agents
 players/__pycache__
 /agents/__pycache__
+/wandb
+/figures
+/saved_models/*
+test.py
+wandb_dqn_experiment.py

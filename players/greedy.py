@@ -1,6 +1,8 @@
 import random
 from mancala import STORE
 
+random.seed(0)
+
 class Greedy():
     def __init__(self, name='greedy'):
         self.name = name

@@ -5,7 +5,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import mancala
-from players.human import Human
 from players.naive import Naive
 
 random.seed(0)
@@ -53,7 +52,7 @@ class EGreedy:
         return False
 
 class DQNAgent:
-    def __init__(self, name='dqn', opponents=[Naive()], episodes=200, epsilon_min=0.01, epsilon_decay=0.99, batch_size=512, capacity=10000, gamma=0.9, learning_rate=0.001, neurons=32, tau=0.01, verbose=True):
+    def __init__(self, name='dqn', opponents=[Naive()], episodes=2000, epsilon_min=0.01, epsilon_decay=0.99, batch_size=512, capacity=10000, gamma=0.9, learning_rate=0.001, neurons=32, tau=0.01, verbose=False):
         self.name = name
         self.state_size = (mancala.STORE + 1) * 2
         self.action_size = mancala.STORE
@@ -68,6 +67,7 @@ class DQNAgent:
         self.episodes = episodes
         self.tau = tau
         self.verbose = verbose
+        self.history = []
         self.fixed_states = self.collect_eval_states()
 
     def collect_eval_states(self, num_states=1000):
@@ -87,6 +87,11 @@ class DQNAgent:
         for key in policy_net_state_dict:
             target_net_state_dict[key] = policy_net_state_dict[key] * self.tau + target_net_state_dict[key] * (1 - self.tau)
         self.target_model.load_state_dict(target_net_state_dict)
+
+    def load_model(self, path):
+        self.policy_model = DQN(self.state_size, 32, mancala.STORE)
+        self.policy_model.load_state_dict(torch.load(path))
+        self.policy_model.eval()
 
     def act(self, game):
         state = game.get_state()
@@ -123,46 +128,53 @@ class DQNAgent:
     def step(self, env, action):
         init_score = env.board[env.current_player][mancala.STORE]
         info = env.step(action, verbose=False)
-
-        current_score = env.board[env.current_player][mancala.STORE]
-        opponent_score = env.board[env.switch_side(env.current_player)][mancala.STORE]
-        reward = 2 * current_score - opponent_score - init_score
-
+        score = env.board[env.current_player][mancala.STORE]
+        # Reward for increasing score
+        reward = score - init_score
+        # Penalty for idle turns
+        if score == init_score:
+            reward -= 5
+        # Reward for capturing stones
+        if info['capture']:
+            reward += 10
+        # Bonus round reward
+        if info["bonus_round"]:
+            reward += 20
+        # Penalty for reckless play
         if not info["bonus_round"]:
             reward -= info['capture_exposure']
-
+        # Game over rewards/penalties
         if info["game_over"]:
             if env.get_winner() == env.current_player:
-                reward += 50
+                reward += 100
             else:
-                reward -= 50
-
-        if info["capture"] or info["bonus_round"]:
-            reward += 10
+                reward -= 100
         return env.get_state(), reward, info["game_over"]
 
     def run_episode(self, opponent_types):
         opponent = random.choice(opponent_types)
-        env = mancala.Game({1: DQNAgent('dqn', self), 2: opponent})
+        if random.random() < 0.5:
+            env = mancala.Game({1: self, 2: opponent})
+        else:
+            env = mancala.Game({1: opponent, 2: self})
         state = env.get_state()
-        info = {'avg_loss': 0, 'avg_reward': 0, 'steps': 0}
+        info = {'loss': 0, 'reward': 0, 'steps': 0}
         game_over = False
-
         while not game_over:
-            info['steps'] += 1
             if 'dqn' in env.players[env.current_player].name:
                 action = self.act(env)
                 next_state, reward, game_over = self.step(env, action)
                 self.memory.remember(state, action, reward, next_state, game_over)
-                info['avg_reward'] += reward
+                info['reward'] += reward
                 if len(self.memory) > self.memory.batch_size:
-                    info['avg_loss'] += self.replay()
+                    info['loss'] += self.replay()
+                info['steps'] += 1
             else:
                 action = opponent.act(env)
                 next_state, _, game_over = self.step(env, action)
             state = next_state
-        info['avg_reward'] /= info['steps']
-        info['avg_loss'] /= info['steps']
+        info['reward'] /= info['steps']
+        info['loss'] /= info['steps']
         return info
     
     def compute_average_max_q(self):
@@ -172,29 +184,27 @@ class DQNAgent:
             max_q_values.append(torch.max(q_values).item())
         return sum(max_q_values)/len(max_q_values)
 
-    def plot_history(self, history):
-        _, axs = plt.subplots(3, figsize=(8, 13))
-        labels = ('Loss', 'Reward', 'Average Max Q')
-        for i in range(len(labels)):
-            axs[i].plot([h[i] for h in history])
+    def plot_history(self):
+        _, axs = plt.subplots(4, figsize=(8, 13))
+        labels = ('Loss', 'Reward', 'Steps', 'Average Max Q')
+        for i, l in enumerate(labels):
+            axs[i].plot([h[i] for h in self.history])
             axs[i].set_xlabel('Episodes')
-            axs[i].set_ylabel(labels[i])
+            axs[i].set_ylabel(l)
         plt.grid(True)
         plt.show()
+    
 
     def train_dqn(self):
         if self.verbose:
             print('Training DQN agent against:', [o.name for o in self.opponents])
-        steps = 0
-        history = []
         for e in range(self.episodes):
             info = self.run_episode(self.opponents)
-            steps += info['steps']
             self.update_target_model()
             avg_max_q = self.compute_average_max_q()
-            history.append((info['avg_loss'], info['avg_reward'], avg_max_q))
+            self.history.append((info['loss'], info['reward'], info['steps'], avg_max_q))
             if self.verbose:
-                print(f"Episode: {e} Steps: {steps} Epsilon: {self.e_greedy.epsilon:.2f} Loss: {info['avg_loss']:.2f} Reward: {info['avg_reward']:.2f} Q: {avg_max_q:.2f}")
+                print(f"Episode: {e} Steps: {info['steps']} Epsilon: {self.e_greedy.epsilon:.2f} Loss: {info['loss']:.2f} Reward: {info['reward']:.2f} Q: {avg_max_q:.2f}")
         if self.verbose:
-            self.plot_history(history)
+            self.plot_history()
         return self

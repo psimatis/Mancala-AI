@@ -2,10 +2,12 @@ from collections import defaultdict
 import pandas as pd
 from mancala import Game
 
-def run_experiment(players, games_number):
+def run_experiment(players, games_number=100):
     games = defaultdict(lambda: defaultdict(int))
-    for p1 in players[1:]:
-        for p2 in players[1:]:
+    if players[0].name == 'human':
+        players = players[1:]
+    for p1 in players:
+        for p2 in players:
             if p1 == p2:
                 continue
             game_name = p1.name + ' vs ' + p2.name
@@ -18,7 +20,7 @@ def run_experiment(players, games_number):
                     games[game_name][p1.name] += 1
                 else:
                     games[game_name][p2.name] += 1
-    print_results(games, games_number)
+    return print_results(games, games_number)
 
 def print_results(games, games_number):
     results = []
@@ -52,3 +54,5 @@ def print_results(games, games_number):
     combined = combined.sort_values(by='Total Wins', ascending=False).reset_index(drop=True)
     print(combined.to_string(index=False))
     print()
+    dqn_wins = combined.loc[combined['Player'] == 'dqn', 'Total Wins'].sum()
+    return combined, dqn_wins
