@@ -52,7 +52,7 @@ class EGreedy:
         return False
 
 class DQNAgent:
-    def __init__(self, name='dqn', opponents=[Naive()], episodes=2000, epsilon_min=0.01, epsilon_decay=0.99, batch_size=512, capacity=10000, gamma=0.9, learning_rate=0.001, neurons=32, tau=0.01, verbose=False):
+    def __init__(self, name='dqn', opponents=[Naive()], episodes=2000, epsilon_min=0.01, epsilon_decay=0.99, batch_size=512, capacity=10000, gamma=0.9, learning_rate=0.001, neurons=32, tau=0.01, double_dqn=False, verbose=False):
         self.name = name
         self.state_size = (mancala.STORE + 1) * 2
         self.action_size = mancala.STORE
@@ -66,6 +66,7 @@ class DQNAgent:
         self.opponents = opponents
         self.episodes = episodes
         self.tau = tau
+        self.double_dqn = double_dqn
         self.verbose = verbose
         self.history = []
         self.fixed_states = self.collect_eval_states()
@@ -115,7 +116,11 @@ class DQNAgent:
 
         non_final_next_states = next_states[~game_overs]
         if len(non_final_next_states) > 0:
-            next_state_values[~game_overs] = (self.target_model(non_final_next_states).max(1)[0].detach())
+            if self.double_dqn:
+                next_actions = self.policy_model(non_final_next_states).max(1)[1].unsqueeze(1)
+                next_state_values[~game_overs] = self.target_model(non_final_next_states).gather(1, next_actions).squeeze().detach()
+            else:
+                next_state_values[~game_overs] = self.target_model(non_final_next_states).max(1)[0].detach()
 
         expected_q_values = rewards + self.gamma * next_state_values
         loss = self.criterion(current_q_values, expected_q_values.unsqueeze(1))
@@ -124,11 +129,9 @@ class DQNAgent:
         self.optimizer.step()
         self.e_greedy.update()
         return loss.item()
-
-    def step(self, env, action):
-        init_score = env.board[env.current_player][mancala.STORE]
-        info = env.step(action, verbose=False)
-        score = env.board[env.current_player][mancala.STORE]
+    
+    def calculate_reward(self, env, player, init_score, info):
+        score = env.board[player][mancala.STORE]
         # Reward for increasing score
         reward = score - init_score
         # Penalty for idle turns
@@ -140,15 +143,22 @@ class DQNAgent:
         # Bonus round reward
         if info["bonus_round"]:
             reward += 20
-        # Penalty for reckless play
+        # Capture risk penalty
         if not info["bonus_round"]:
             reward -= info['capture_exposure']
         # Game over rewards/penalties
         if info["game_over"]:
-            if env.get_winner() == env.current_player:
+            if env.get_winner() == player:
                 reward += 100
             else:
                 reward -= 100
+        return reward
+
+    def step(self, env, action):
+        player = env.current_player
+        init_score = env.board[player][mancala.STORE]
+        info = env.step(action, verbose=False)
+        reward = self.calculate_reward(env, player, init_score, info)
         return env.get_state(), reward, info["game_over"]
 
     def run_episode(self, opponent_types):
@@ -193,7 +203,6 @@ class DQNAgent:
             axs[i].set_ylabel(l)
         plt.grid(True)
         plt.show()
-    
 
     def train_dqn(self):
         if self.verbose:

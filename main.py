@@ -16,9 +16,11 @@ def initialize_players(verbose):
         Naive(),
         Greedy(),
         Minimax(name='mm2', depth=2),
+        Minimax(name='mm3', depth=3),
         ga.GeneticAgent('ga_random', ga.train_genetic(generations=5, verbose=verbose)),
         ga.GeneticAgent('ga_tournament', ga.train_genetic(generations=5, simulations=1, tournament=100, verbose=verbose)),
-        dqn.DQNAgent('dqn_random', verbose=verbose).train_dqn(),
+        dqn.DQNAgent('dqn_random', episodes=500, verbose=verbose).train_dqn(),
+        dqn.DQNAgent('ddqn_random', episodes=500, double_dqn=True, verbose=verbose).train_dqn(),
         dqn.DQNAgent('dqn_greedy', opponents=[Greedy()], verbose=verbose).train_dqn(),
         dqn.DQNAgent('dqn_mm', opponents=[Minimax(name='mm4', depth=4)], verbose=verbose).train_dqn(),
     ]
