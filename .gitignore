@@ -9,3 +9,4 @@ players/__pycache__
 /saved_models/*
 test.py
 wandb_dqn_experiment.py
+best_models/

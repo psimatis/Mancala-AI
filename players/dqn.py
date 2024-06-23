@@ -1,3 +1,4 @@
+import os
 import random
 from collections import deque
 import matplotlib.pyplot as plt
@@ -31,7 +32,9 @@ class Memory:
         self.memory.append((state, action, reward, next_state, game_over))
 
     def sample(self):
-        return random.sample(self.memory, self.batch_size)
+        minibatch = random.sample(self.memory, self.batch_size)
+        states, actions, rewards, next_states, game_overs = map(torch.tensor, zip(*minibatch))
+        return states.float(), actions, rewards, next_states.float(), game_overs
 
     def __len__(self):
         return len(self.memory)
@@ -59,6 +62,7 @@ class DQNAgent:
         self.e_greedy = EGreedy(1, epsilon_min, epsilon_decay)
         self.memory = Memory(capacity, batch_size)
         self.gamma = gamma
+        self.neurons = neurons
         self.policy_model = DQN(self.state_size, neurons, self.action_size)
         self.target_model = DQN(self.state_size, neurons, self.action_size)
         self.optimizer = optim.Adam(self.policy_model.parameters(), lr=learning_rate)
@@ -67,63 +71,82 @@ class DQNAgent:
         self.episodes = episodes
         self.tau = tau
         self.double_dqn = double_dqn
+        self.fixed_states = self.collect_eval_states()
         self.verbose = verbose
         self.history = []
-        self.fixed_states = self.collect_eval_states()
 
     def collect_eval_states(self, num_states=1000):
         states = []
         while len(states) < num_states:
             env = mancala.Game({1: Naive(), 2: Naive()})
-            for _ in range(num_states):
+            while True:
                 states.append(env.get_state())
                 action = env.players[env.current_player].act(env)
-                if env.step(action, verbose=False)['game_over']:
+                if env.step(action)['game_over']:
                     break
         return states
+    
+    def compute_average_max_q(self):
+        max_q_values = []
+        for state in self.fixed_states:
+            q_values = self.policy_model(torch.FloatTensor(state).unsqueeze(0))
+            max_q_values.append(torch.max(q_values).item())
+        return sum(max_q_values)/len(max_q_values)
 
     def update_target_model(self):
-        target_net_state_dict = self.target_model.state_dict()
-        policy_net_state_dict = self.policy_model.state_dict()
-        for key in policy_net_state_dict:
-            target_net_state_dict[key] = policy_net_state_dict[key] * self.tau + target_net_state_dict[key] * (1 - self.tau)
-        self.target_model.load_state_dict(target_net_state_dict)
-
-    def load_model(self, path):
-        self.policy_model = DQN(self.state_size, 32, mancala.STORE)
-        self.policy_model.load_state_dict(torch.load(path))
+        for target_param, policy_param in zip(self.target_model.parameters(), self.policy_model.parameters()):
+            target_param.data.copy_(self.tau * policy_param.data + (1 - self.tau) * target_param.data)
+    
+    def load(self, path, neurons=None):
+        state_dict = torch.load(path)
+        # TODO: remove when i retrain the best dqn_mix
+        if neurons:
+            self.policy_model = DQN(self.state_size, neurons, self.action_size)  
+            self.policy_model.load_state_dict(state_dict)      
+        else:
+            self.policy_model = DQN(self.state_size, state_dict['neurons'], self.action_size)
+            self.policy_model.load_state_dict(state_dict['model_state_dict'])
         self.policy_model.eval()
+        self.e_greedy.epsilon = 0
+        return self
+    
+    def save(self, path):
+        model_path = os.path.join(path, f'dqn_model_{self.name}.pth')
+        state_dict = {
+            'opponents': ' '.join([o.name for o in self.opponents]), 
+            'episodes': self.episodes, 
+            'epsilon_decay': self.e_greedy.decay, 
+            'batch_size': self.memory.batch_size, 
+            'capacity': len(self.memory), 
+            'neurons': self.neurons,
+            'double_dqn': self.double_dqn,
+            'model_state_dict': self.policy_model.state_dict()
+        }
+        torch.save(state_dict, model_path)        
 
     def act(self, game):
         state = game.get_state()
         state = state[7:] + state[:7] if game.current_player == 2 else state
-
         if self.e_greedy.explore():
             return random.choice(game.get_valid_moves())
-
         invalid_actions = [a for a in range(self.action_size) if state[a] == 0]
         q_values = self.policy_model(torch.FloatTensor(state).unsqueeze(0))
         q_values[0][invalid_actions] = float("-inf")
         return torch.argmax(q_values, dim=1).item()
 
     def replay(self):
-        minibatch = self.memory.sample()
-        states, actions, rewards, next_states, game_overs = map(torch.tensor, zip(*minibatch))
-        states, next_states = states.float(), next_states.float()
-
-        current_q_values = self.policy_model(states).gather(1, actions.unsqueeze(1))
-        next_state_values = torch.zeros(self.memory.batch_size)
-
-        non_final_next_states = next_states[~game_overs]
-        if len(non_final_next_states) > 0:
+        states, actions, rewards, next_states, game_overs = self.memory.sample()
+        predicted_q = self.policy_model(states).gather(1, actions.unsqueeze(1))
+        next_state_q = torch.zeros(self.memory.batch_size)
+        next_states = next_states[~game_overs]
+        if len(next_states) > 0:
             if self.double_dqn:
-                next_actions = self.policy_model(non_final_next_states).max(1)[1].unsqueeze(1)
-                next_state_values[~game_overs] = self.target_model(non_final_next_states).gather(1, next_actions).squeeze().detach()
+                next_actions = self.policy_model(next_states).max(1)[1].unsqueeze(1)
+                next_state_q[~game_overs] = self.target_model(next_states).gather(1, next_actions).squeeze().detach()
             else:
-                next_state_values[~game_overs] = self.target_model(non_final_next_states).max(1)[0].detach()
-
-        expected_q_values = rewards + self.gamma * next_state_values
-        loss = self.criterion(current_q_values, expected_q_values.unsqueeze(1))
+                next_state_q[~game_overs] = self.target_model(next_states).max(1)[0].detach()
+        target_q = rewards + self.gamma * next_state_q
+        loss = self.criterion(predicted_q, target_q.unsqueeze(1))
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
@@ -132,21 +155,15 @@ class DQNAgent:
     
     def calculate_reward(self, env, player, init_score, info):
         score = env.board[player][mancala.STORE]
-        # Reward for increasing score
         reward = score - init_score
-        # Penalty for idle turns
         if score == init_score:
             reward -= 5
-        # Reward for capturing stones
         if info['capture']:
             reward += 10
-        # Bonus round reward
         if info["bonus_round"]:
             reward += 20
-        # Capture risk penalty
         if not info["bonus_round"]:
             reward -= info['capture_exposure']
-        # Game over rewards/penalties
         if info["game_over"]:
             if env.get_winner() == player:
                 reward += 100
@@ -157,7 +174,7 @@ class DQNAgent:
     def step(self, env, action):
         player = env.current_player
         init_score = env.board[player][mancala.STORE]
-        info = env.step(action, verbose=False)
+        info = env.step(action)
         reward = self.calculate_reward(env, player, init_score, info)
         return env.get_state(), reward, info["game_over"]
 
@@ -175,9 +192,9 @@ class DQNAgent:
                 action = self.act(env)
                 next_state, reward, game_over = self.step(env, action)
                 self.memory.remember(state, action, reward, next_state, game_over)
-                info['reward'] += reward
                 if len(self.memory) > self.memory.batch_size:
                     info['loss'] += self.replay()
+                info['reward'] += reward
                 info['steps'] += 1
             else:
                 action = opponent.act(env)
@@ -185,19 +202,12 @@ class DQNAgent:
             state = next_state
         info['reward'] /= info['steps']
         info['loss'] /= info['steps']
+        info['avg_max_q'] = self.compute_average_max_q()
         return info
-    
-    def compute_average_max_q(self):
-        max_q_values = []
-        for state in self.fixed_states:
-            q_values = self.policy_model(torch.FloatTensor(state).unsqueeze(0))
-            max_q_values.append(torch.max(q_values).item())
-        return sum(max_q_values)/len(max_q_values)
 
     def plot_history(self):
         _, axs = plt.subplots(4, figsize=(8, 13))
-        labels = ('Loss', 'Reward', 'Steps', 'Average Max Q')
-        for i, l in enumerate(labels):
+        for i, l in enumerate(('Loss', 'Reward', 'Steps', 'Average Max Q')):
             axs[i].plot([h[i] for h in self.history])
             axs[i].set_xlabel('Episodes')
             axs[i].set_ylabel(l)
@@ -210,10 +220,9 @@ class DQNAgent:
         for e in range(self.episodes):
             info = self.run_episode(self.opponents)
             self.update_target_model()
-            avg_max_q = self.compute_average_max_q()
-            self.history.append((info['loss'], info['reward'], info['steps'], avg_max_q))
+            self.history.append((info['loss'], info['reward'], info['steps'], info['avg_max_q']))
             if self.verbose:
-                print(f"Episode: {e} Steps: {info['steps']} Epsilon: {self.e_greedy.epsilon:.2f} Loss: {info['loss']:.2f} Reward: {info['reward']:.2f} Q: {avg_max_q:.2f}")
+                print(f"Episode: {e} Steps: {info['steps']} Epsilon: {self.e_greedy.epsilon:.2f} Loss: {info['loss']:.2f} Reward: {info['reward']:.2f} Q: {info['avg_max_q']:.2f}")
         if self.verbose:
             self.plot_history()
         return self

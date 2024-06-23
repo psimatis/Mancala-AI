@@ -11,7 +11,7 @@ def run_experiment(players, games_number=100):
             if p1 == p2:
                 continue
             game_name = p1.name + ' vs ' + p2.name
-            print(game_name)
+            print('Now playing:', game_name)
             for _ in range(games_number):
                 winner = Game({1: p1, 2: p2}).game_loop()
                 if winner == 0:
@@ -45,7 +45,6 @@ def print_results(games, games_number):
 
     grouped_p1 = df.groupby('Player 1')['P1 Wins'].sum().reset_index()
     grouped_p1.columns = ['Player', 'P1 Wins']
-
     grouped_p2 = df.groupby('Player 2')['P2 Wins'].sum().reset_index()
     grouped_p2.columns = ['Player', 'P2 Wins']
 
@@ -54,5 +53,6 @@ def print_results(games, games_number):
     combined = combined.sort_values(by='Total Wins', ascending=False).reset_index(drop=True)
     print(combined.to_string(index=False))
     print()
+    
     dqn_wins = combined.loc[combined['Player'] == 'dqn', 'Total Wins'].sum()
     return combined, dqn_wins

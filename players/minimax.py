@@ -18,10 +18,9 @@ class Minimax:
     def minimax(self, game, depth, alpha, beta):
         if depth == 0 or game.is_game_over():
             return self.evaluate(game)
-
         player = game.current_player
-        valid_moves = game.get_valid_moves(reverse=True)
-
+        valid_moves = game.get_valid_moves()
+        valid_moves.reverse()
         if player == 1:
             max_eval = -float('inf')
             for move in valid_moves:
@@ -45,7 +44,8 @@ class Minimax:
 
     def act(self, game):
         self.player = game.current_player
-        valid_moves = game.get_valid_moves(reverse=True)
+        valid_moves = game.get_valid_moves()
+        valid_moves.reverse() 
         best_move = valid_moves[0]
         best_score = -float('inf')
         for move in valid_moves:
@@ -55,3 +55,4 @@ class Minimax:
                 best_score = score
                 best_move = move
         return best_move
+    

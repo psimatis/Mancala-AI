@@ -1,5 +1,6 @@
 import random
 import matplotlib.pyplot as plt
+import pickle
 import mancala
 from players.naive import Naive
 
@@ -16,7 +17,15 @@ class GeneticAgent():
         for pit, _ in scores:
             if not game.is_pit_empty(game.current_player, pit):
                 return pit
-        return random.choice(game.get_valid_moves())
+
+    def save(self, filename):
+        with open(filename, 'wb') as f:
+            pickle.dump(self, f)
+
+def load(filename):
+    with open(filename, 'rb') as f:
+        data = pickle.load(f)
+    return GeneticAgent(name=data.name, agent=data.agent)
 
 def create_individual():
     return [random.uniform(0, 1) for _ in range(mancala.STORE)]
@@ -33,8 +42,8 @@ def crossover(parent1, parent2):
 def run_simulation(simulations, strategy, opponent):
     wins = 0
     for _ in range(simulations):
-        game = mancala.Game({1: opponent, 2: GeneticAgent('gen', strategy)})
-        result = game.game_loop(verbose=False)
+        game = mancala.Game({1: GeneticAgent('gen', strategy), 2: opponent})
+        result = game.game_loop()
         if result == 1:
             wins += 1
         elif result == 2:
@@ -54,7 +63,6 @@ def evolve_population(population, fitness_func, mutation_rate, elitism, simulati
     fitness_scores = [(fitness_func(individual, simulations), individual) for individual in population]
     fitness_scores.sort(reverse=True, key=lambda x: x[0])
     population = [individual for _, individual in fitness_scores]
-
     next_population = population[:elitism]  
     while len(next_population) < len(population):
         parent1, parent2 = random.choices(population[:top], k=2)

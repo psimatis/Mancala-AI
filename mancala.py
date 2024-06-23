@@ -20,18 +20,22 @@ class Game:
             print('HEALTH CHECK FAILED. TOTAL STONES:', total_stones)
             self.print_board()
             sys.exit()
+    
+    def print_board(self, info=None):
+        if info: 
+            print(info)
+        print(self.board[1])
+        print(self.board[2])
+        print('---------')
 
     def get_state(self):
         return self.board[1] + self.board[2]
     
-    def get_current_player(self):
-        return self.current_player
+    def get_valid_moves(self):
+        return [i for i in range(STORE) if not self.is_pit_empty(self.current_player, i)]
     
-    def get_valid_moves(self, reverse=False):
-        side = self.current_player
-        if reverse:
-            return [i for i in reversed(range(STORE)) if not self.is_pit_empty(side, i)]
-        return [i for i in range(STORE) if not self.is_pit_empty(side, i)]
+    def check_bonus_round(self, landing):
+        return landing['pit'] == STORE
 
     def is_game_over(self):
         return any(sum(self.board[side][:STORE]) == 0 for side in self.board)
@@ -67,18 +71,16 @@ class Game:
         return {'side':side, 'pit':pit}
 
     def capture(self, side, landing):
-        if side != landing['side'] or self.board[side][landing['pit']] > 1:
-            return False
-        if landing['pit'] == STORE:
+        if side != landing['side'] or self.board[side][landing['pit']] > 1 or landing['pit'] == STORE:
             return False
         opponent = self.switch_side(side)
         stones = self.board[opponent][landing['pit']]
-        if stones > 0:
-            self.board[side][STORE] += stones + 1
-            self.board[opponent][landing['pit']] = 0
-            self.board[side][landing['pit']] = 0
-            return True
-        return False
+        if stones == 0:
+            return False
+        self.board[side][STORE] += stones + 1
+        self.board[opponent][landing['pit']] = 0
+        self.board[side][landing['pit']] = 0
+        return True
     
     def capture_exposure(self):
         exposures = set()
@@ -90,9 +92,6 @@ class Game:
             if simulation.capture(opponent, landing):
                 exposures.add((landing['pit'], self.board[self.current_player][landing['pit']]))
         return sum([s[1] for s in exposures])
-
-    def check_bonus_round(self, landing):
-        return landing['pit'] == STORE
 
     def get_winner(self):
         p1_stones = sum(self.board[1])
@@ -129,9 +128,3 @@ class Game:
         if verbose:
             print('Winner:', self.get_winner())
         return self.get_winner()
-
-    def print_board(self, info=None):
-        if info: print(info)
-        print(self.board[1])
-        print(self.board[2])
-        print('---------')
