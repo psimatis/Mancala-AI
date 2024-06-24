@@ -1,12 +1,10 @@
 /__pycache__
 .pylintrc
-todo
+/best_models
+/saved_models
 players/agents
 players/__pycache__
 /agents/__pycache__
 /wandb
-/figures
-/saved_models/*
-test.py
 wandb_dqn_experiment.py
-best_models/
+todo

@@ -80,7 +80,7 @@ def plot_training(history):
     plt.grid(True)
     plt.show()
 
-def train_genetic(generations=10, population_size=100, mutation_rate=0.1, simulations=100, elitism=2, tournament=0, top=10, verbose=True):
+def train_genetic(generations=10, population_size=100, mutation_rate=0.1, simulations=100, elitism=2, tournament=0, top=10, verbose=False):
     if verbose:
         training_type = 'tournament' if tournament else 'random'
         print(f'Training {training_type}-based genetic algorithm')

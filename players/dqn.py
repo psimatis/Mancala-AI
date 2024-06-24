@@ -55,7 +55,7 @@ class EGreedy:
         return False
 
 class DQNAgent:
-    def __init__(self, name='dqn', opponents=[Naive()], episodes=2000, epsilon_min=0.01, epsilon_decay=0.99, batch_size=512, capacity=10000, gamma=0.9, learning_rate=0.001, neurons=32, tau=0.01, double_dqn=False, verbose=False):
+    def __init__(self, name='dqn', opponents=[Naive()], episodes=500, epsilon_min=0.01, epsilon_decay=0.99, batch_size=512, capacity=10000, gamma=0.9, learning_rate=0.001, neurons=32, tau=0.01, double_dqn=False, verbose=False):
         self.name = name
         self.state_size = (mancala.STORE + 1) * 2
         self.action_size = mancala.STORE
@@ -206,8 +206,8 @@ class DQNAgent:
         return info
 
     def plot_history(self):
-        _, axs = plt.subplots(4, figsize=(8, 13))
-        for i, l in enumerate(('Loss', 'Reward', 'Steps', 'Average Max Q')):
+        _, axs = plt.subplots(3, figsize=(8, 13))
+        for i, l in enumerate(('Reward', 'Average Max Q', 'Loss')):
             axs[i].plot([h[i] for h in self.history])
             axs[i].set_xlabel('Episodes')
             axs[i].set_ylabel(l)
@@ -220,7 +220,7 @@ class DQNAgent:
         for e in range(self.episodes):
             info = self.run_episode(self.opponents)
             self.update_target_model()
-            self.history.append((info['loss'], info['reward'], info['steps'], info['avg_max_q']))
+            self.history.append((info['reward'], info['avg_max_q'], info['loss'], info['steps']))
             if self.verbose:
                 print(f"Episode: {e} Steps: {info['steps']} Epsilon: {self.e_greedy.epsilon:.2f} Loss: {info['loss']:.2f} Reward: {info['reward']:.2f} Q: {info['avg_max_q']:.2f}")
         if self.verbose:

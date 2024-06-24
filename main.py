@@ -10,18 +10,17 @@ from experiment import run_experiment
 SHOW_TRAINING = True
 GAMES = 100
 
-def initialize_players(verbose):
+def initialize_players():
     players = [
         Human(),
         Naive(),
         Greedy(),
-        Minimax(name='mm2', depth=2),
-        Minimax(name='mm3', depth=3),
-        ga.GeneticAgent('ga_random', ga.train_genetic(generations=10, verbose=verbose)),
-        ga.GeneticAgent('ga_tournament', ga.train_genetic(generations=10, simulations=1, tournament=100, verbose=verbose)),
-        dqn.DQNAgent('dqn_random', verbose=verbose).train_dqn(),
+        Minimax(),
+        ga.GeneticAgent('ga_random', ga.train_genetic(verbose=SHOW_TRAINING)),
+        ga.GeneticAgent('ga_tournament', ga.train_genetic(simulations=1, tournament=100, verbose=SHOW_TRAINING)),
+        dqn.DQNAgent('dqn', verbose=SHOW_TRAINING).train_dqn(),
+        dqn.DQNAgent('ddqn', double_dqn=True, verbose=SHOW_TRAINING).train_dqn(),
     ]
-    players.append(dqn.DQNAgent('dqn_mix', opponents=players[7:9], verbose=verbose).train_dqn())
     return players
 
 def play_mancala(players):
@@ -30,6 +29,6 @@ def play_mancala(players):
         Game({1: p, 2: players[0]}).game_loop(verbose=True)
 
 if __name__ == "__main__":
-    players = initialize_players(verbose=SHOW_TRAINING)
+    players = initialize_players()
     run_experiment(players, GAMES)
     play_mancala(players)
