@@ -1,15 +1,15 @@
 # Mancala-AI
-Mancala[^1] is a turn-based strategy board game where two players compete in stone collection. I keep beating the Nintendo Switch AI, thus I wrote my own. The repository contains the complete game along with several AI players (e.g., DQN, genetic).
+Mancala[^1] is a classic strategy board game where two players compete in stone collection. After beating the Nintendo Switch AI, I decided to write my own. The repository contains the complete game along with several AI players.
 
-## AI Opponents
-1. Deep Q-Learning Network (DQN)[^2]: Uses reinforcement learning to develop a strategy based on rewards.
-2. Double DQN[^3]: Enhances DQN by reducing overestimation.
-1. Genetic Algorithm[^4]: Evolution selects the fittest candidate after multiple generations of simulated games.
-1. Tournament Selection[^5]: Selects the fittest candidate through multiple tournaments (i.e., battle royal).
-1. Minimax[^6]: Simulates the game down to a specified depth before selecting a move.
-1. Greedy: Focuses on immediate gains.
-1. Naive: Moves randomly.
-1. Human: You play the game.
+## Players
+1. **Deep Q-Learning Network (DQN)**[^2]: Uses reinforcement learning to develop a strategy based on rewards.
+2. **Double DQN**[^3]: Enhances DQN by reducing overestimation.
+1. **Genetic Algorithm**[^4]: Evolution selects the fittest candidate after multiple generations of simulated games.
+1. **Tournament Selection**[^5]: Selects the fittest candidate through multiple tournaments (i.e., battle royal).
+1. **Minimax**[^6]: Simulates the game down to a specified depth before selecting a move.
+1. **Greedy**: Focuses on immediate gains.
+1. **Naive**: Moves randomly.
+1. **Human**: You play the game.
 
 ## Usage
     python main.py
@@ -33,7 +33,7 @@ To facilitate experimentation, the non-trivial opponents are highly configurable
 1. **learning_rate** (float): Learning rate for the optimizer.
 1. **neurons** (int): Number of neurons in each hidden layer of the neural network.
 1. **tau** (float): Soft update parameter for updating the target network.
-2. **Double DQN** (boolean): Enables Double DQN.
+2. **double_dqn** (boolean): Enables Double DQN.
 
 #### Genetic Algorithm
 1. **generations** (int): Number of iterations the algorithm will run.
@@ -50,19 +50,81 @@ To facilitate experimentation, the non-trivial opponents are highly configurable
 ## A deeper dive for the nerds
 
 #### Project Goal
-My goal is to develop challenging AIs using a variety of methods. This project has been immensely fun, and I may add more AI agents in the future.
+My goal is to develop challenging opponents using a variety of AI methods. This project has been immensely fun, and I may add more agents in the future.
 
 #### Agent Evaluation
-Impartial evaluation is challenging due to varying performance metrics among agents. Furthermore, using myself as a sparring partner isn't ideal. Thus, I opted for tournaments between agents as the most practical and fair method (i.e., the best agent has the most wins).
-
-#### Minimax
-Deep explorations may outperform any player (given proper evaluation). However, Minimax is very slow even with alpha-beta pruning[^7]. Evaluation-wise, I considered both the entire player's side of the board and only the stores. Since there was no significant difference, I evaluate solely based on store difference, following Occam's razor.
-
-#### Genetic Algorithm
-I often heard in academic circles that *"genetic stuff never works"*. Nevertheless, I decided to give this *underdog* a chance. Both vanilla and tournament selection use the number of wins as fitness to evolve a score distribution for each pit. That score is multiplied by the number of stones, and the pit with the highest value is selected for the next move.
+Impartial evaluation is challenging due to varying performance metrics among agents, and using myself as a sparring partner isn't ideal. Thus, I opted for tournaments between agents as the most practical and fair method (i.e., the best agent has the most wins). The table below demonstrates the performance of various agents in a toy simulated tournament. Running the code with the provided parameters must deliver the same results. These configurations are <ins>not</ins> optimal for training parameters but serve as a good starting point. Feel free to experiment and let me know of any interesting findings.
+<table align="center">
+  <tr>
+    <th>Player</th>
+    <th>Player 1 Wins</th>
+    <th>Player 2 Wins</th>
+    <th>Total Wins</th>
+  </tr>
+  <tr>
+    <td>Double DQN</td>
+    <td align="center">5</td>
+    <td align="center">4</td>
+    <td align="center">9</td>
+  </tr>
+  <tr>
+    <td>DQN</td>
+    <td align="center">5</td>
+    <td align="center">2</td>
+    <td align="center">7</td>
+  </tr>
+  <tr>
+    <td>Vanilla GA</td>
+    <td align="center">4</td>
+    <td align="center">2</td>
+    <td align="center">6</td>
+  </tr>
+  <tr>
+    <td>Greedy</td>
+    <td align="center">4</td>
+    <td align="center">2</td>
+    <td align="center">6</td>
+  </tr>
+  <tr>
+    <td>Minimax</td>
+    <td align="center">5</td>
+    <td align="center">1</td>
+    <td align="center">6</td>
+  </tr>
+  <tr>
+    <td>Tournament GA</td>
+    <td align="center">3</td>
+    <td align="center">2</td>
+    <td align="center">5</td>
+  </tr>
+  <tr>
+    <td>Naive</td>
+    <td align="center">0</td>
+    <td align="center">0</td>
+    <td align="center">0</td>
+  </tr>
+</table>
+Note that agents struggle as player 2, which is expected since most agents perform a perfect opening[^8] as player 1. Double DQN is the best performing and a well balanced agent, performing well regardless of the order. The DQNs shown here are trained against Naive players, but there is potential for improvement if trained against other strategies. Vanilla GA performs surprisingly well, while Tournament GA underperforms, likely due to overfitting. Individuals learn how to beat each other but are not effective against other strategies. I discuss Minimax's underperformance in the following section. Unsurprisingly, Naive serves as a good baseline, not winning a single match.
 
 #### DQN
-DQN training involves numerous parameters and is notoriously unstable. In addition, designing a dense and *good* reward policy is more of an art than a science. However, the use of Huber loss and soft updates of network weights (Polyak averaging) is beneficial in stabilizing training.
+DQN training involves numerous parameters and is notoriously unstable. In addition, designing a dense and *good* reward policy is more of an art than a science. However, the use of Huber loss and soft updates of network weights (Polyak averaging) is beneficial in stabilizing training. The figure below demonstrates the reward and loss averages per episode, and average max Q-value for preselected states[^2].
+<p align="center">
+<img src="./plots/dqn.png" style="width:48%" title="DQN"> 
+    <img src="./plots/ddqn.png" style="width:48%" title="DDQN"> 
+</p>
+
+#### Genetic Algorithm
+I often heard in academic circles that *"genetic stuff never works"*. Nevertheless, I decided to give this *underdog* a chance. Both vanilla and tournament selection use the number of wins as fitness to evolve a score distribution for each pit. That score is multiplied by the number of stones, and the pit with the highest value is selected for the next move. The figure below shows the best fitness per generation for Vanilla GA (left) and Tournament GA (right).
+<p align="center">
+<img src="./plots/ga_random.png" style="width:59%" title="Vanilla GA"> 
+<img src="./plots/ga_tournament.png" style="width:59%" title="GA Tournament">
+</p>
+
+#### Minimax
+Deep explorations may outperform any player (given proper evaluation). However, Minimax is very slow even with alpha-beta pruning[^8]. Evaluation-wise, I considered both the entire player's side of the board and only the stores. Since there was no significant difference, I evaluate solely based on store difference, following Occam's razor. 
+
+#### Future Work
+I plan to add more reinforcement learning agents and, data provided, supervised learning agents. Furthermore, I intend to take a deeper dive into the Minimax algorithm.
 
 ## References
 [^1]: Mancala: https://en.wikipedia.org/wiki/Mancala
@@ -71,4 +133,5 @@ DQN training involves numerous parameters and is notoriously unstable. In additi
 [^4]: Genetic Algortithm: https://en.wikipedia.org/wiki/Genetic_algorithm
 [^5]: Tournament Selection: https://en.wikipedia.org/wiki/Tournament_selection#:~:text=Tournament%20selection%20is%20a%20method,at%20random%20from%20the%20population.
 [^6]: Minimax Algorithm: https://en.wikipedia.org/wiki/Minimax#:~:text=Minmax%20(sometimes%20Minimax%2C%20MM%20or,case%20(maximum%20loss)%20scenario.
-[^7]: Alpha-beta pruning: https://en.wikipedia.org/wiki/Alpha%E2%80%93beta_pruning
+[^7]: https://naml.us/paper/irving2000_kalah.pdf
+[^8]: Alpha-beta pruning: https://en.wikipedia.org/wiki/Alpha%E2%80%93beta_pruning
