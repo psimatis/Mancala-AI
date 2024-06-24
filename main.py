@@ -7,7 +7,7 @@ import players.genetic_algorithm as ga
 import players.dqn as dqn
 from experiment import run_experiment
 
-SHOW_TRAINING = True
+SHOW_TRAINING = False
 GAMES = 100
 
 def initialize_players():
@@ -19,7 +19,7 @@ def initialize_players():
         ga.GeneticAgent('ga_random', ga.train_genetic(verbose=SHOW_TRAINING)),
         ga.GeneticAgent('ga_tournament', ga.train_genetic(simulations=1, tournament=100, verbose=SHOW_TRAINING)),
         dqn.DQNAgent('dqn', verbose=SHOW_TRAINING).train_dqn(),
-        dqn.DQNAgent('ddqn', double_dqn=True, verbose=SHOW_TRAINING).train_dqn(),
+        dqn.DQNAgent('ddqn', double_dqn=True, verbose=SHOW_TRAINING).train_dqn()
     ]
     return players
 

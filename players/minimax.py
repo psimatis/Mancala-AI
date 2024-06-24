@@ -13,7 +13,7 @@ class Minimax:
 
     def evaluate(self, game):
         opponent = game.switch_side(self.player)
-        return sum(game.board[self.player]) - sum(game.board[opponent])
+        return game.board[self.player][mancala.STORE] - game.board[opponent][mancala.STORE]
 
     def minimax(self, game, depth, alpha, beta):
         if depth == 0 or game.is_game_over():

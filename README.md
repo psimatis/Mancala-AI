@@ -104,7 +104,7 @@ Impartial evaluation is challenging due to varying performance metrics among age
     <td align="center">0</td>
   </tr>
 </table>
-Note that agents struggle as player 2, which is expected since most agents perform a perfect opening[^8] as player 1. Double DQN is the best performing and a well balanced agent, performing well regardless of the order. The DQNs shown here are trained against Naive players, but there is potential for improvement if trained against other strategies. Vanilla GA performs surprisingly well, while Tournament GA underperforms, likely due to overfitting. Individuals learn how to beat each other but are not effective against other strategies. I discuss Minimax's underperformance in the following section. Unsurprisingly, Naive serves as a good baseline, not winning a single match.
+Note that agents struggle as player 2, which is expected since most agents perform a perfect opening[^8] as player 1. Double DQN is the best performing and a well balanced agent, performing well regardless of the order. The DQNs shown here are trained against Naive players, but there is potential for improvement if trained against other strategies. Vanilla GA performs surprisingly well, while Tournament GA underperforms, likely due to overfitting. Individuals learn how to beat each other but are not effective against other strategies. Unsurprisingly, Naive serves as a good baseline, not winning a single match.
 
 #### DQN
 DQN training involves numerous parameters and is notoriously unstable. In addition, designing a dense and *good* reward policy is more of an art than a science. However, the use of Huber loss and soft updates of network weights (Polyak averaging) is beneficial in stabilizing training. The figure below demonstrates the reward and loss averages per episode, and average max Q-value for preselected states[^2].
@@ -121,10 +121,10 @@ I often heard in academic circles that *"genetic stuff never works"*. Neverthele
 </p>
 
 #### Minimax
-Deep explorations may outperform any player (given proper evaluation). However, Minimax is very slow even with alpha-beta pruning[^8]. Evaluation-wise, I considered both the entire player's side of the board and only the stores. Since there was no significant difference, I evaluate solely based on store difference, following Occam's razor. 
+Deep explorations may outperform any player (given proper evaluation). However, Minimax is very slow even with alpha-beta pruning[^8]. 
 
 #### Future Work
-I plan to add more reinforcement learning agents and, data provided, supervised learning agents. Furthermore, I intend to take a deeper dive into the Minimax algorithm.
+I plan to add more reinforcement learning agents and, data provided, supervised learning agents.
 
 ## References
 [^1]: Mancala: https://en.wikipedia.org/wiki/Mancala
