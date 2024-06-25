@@ -55,7 +55,7 @@ class EGreedy:
         return False
 
 class DQNAgent:
-    def __init__(self, name='dqn', opponents=[Naive()], episodes=1000, epsilon_min=0.01, epsilon_decay=0.999, batch_size=512, capacity=10000, gamma=0.9, learning_rate=0.00001, neurons=64, tau=0.01, double_dqn=False):
+    def __init__(self, name='dqn', opponents=[Naive()], episodes=500, epsilon_min=0.01, epsilon_decay=0.99, batch_size=256, capacity=10000, gamma=0.9, learning_rate=0.001, neurons=32, tau=0.01, double_dqn=False):
         self.name = name
         self.state_size = (mancala.STORE + 1) * 2
         self.action_size = mancala.STORE
