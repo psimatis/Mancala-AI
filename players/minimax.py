@@ -1,7 +1,7 @@
 import mancala
 
 class Minimax:
-    def __init__(self, name='minimax', depth=3):
+    def __init__(self, name='minimax', depth=2):
         self.name = name
         self.depth = depth
         self.player = None

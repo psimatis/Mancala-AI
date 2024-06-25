@@ -55,7 +55,7 @@ class EGreedy:
         return False
 
 class DQNAgent:
-    def __init__(self, name='dqn', opponents=[Naive()], episodes=500, epsilon_min=0.01, epsilon_decay=0.99, batch_size=512, capacity=10000, gamma=0.9, learning_rate=0.001, neurons=32, tau=0.01, double_dqn=False, verbose=False):
+    def __init__(self, name='dqn', opponents=[Naive()], episodes=1000, epsilon_min=0.01, epsilon_decay=0.999, batch_size=512, capacity=10000, gamma=0.9, learning_rate=0.00001, neurons=64, tau=0.01, double_dqn=False):
         self.name = name
         self.state_size = (mancala.STORE + 1) * 2
         self.action_size = mancala.STORE
@@ -72,7 +72,6 @@ class DQNAgent:
         self.tau = tau
         self.double_dqn = double_dqn
         self.fixed_states = self.collect_eval_states()
-        self.verbose = verbose
         self.history = []
 
     def collect_eval_states(self, num_states=1000):
@@ -99,10 +98,9 @@ class DQNAgent:
     
     def load(self, path, neurons=None):
         state_dict = torch.load(path)
-        # TODO: remove when i retrain the best dqn_mix
         if neurons:
             self.policy_model = DQN(self.state_size, neurons, self.action_size)  
-            self.policy_model.load_state_dict(state_dict)      
+            self.policy_model.load_state_dict(state_dict)
         else:
             self.policy_model = DQN(self.state_size, state_dict['neurons'], self.action_size)
             self.policy_model.load_state_dict(state_dict['model_state_dict'])
@@ -180,10 +178,7 @@ class DQNAgent:
 
     def run_episode(self, opponent_types):
         opponent = random.choice(opponent_types)
-        if random.random() < 0.5:
-            env = mancala.Game({1: self, 2: opponent})
-        else:
-            env = mancala.Game({1: opponent, 2: self})
+        env = mancala.Game({1: self, 2: opponent})
         state = env.get_state()
         info = {'loss': 0, 'reward': 0, 'steps': 0}
         game_over = False
@@ -207,22 +202,22 @@ class DQNAgent:
 
     def plot_history(self):
         _, axs = plt.subplots(3, figsize=(8, 13))
-        for i, l in enumerate(('Reward', 'Average Max Q', 'Loss')):
+        for i, l in enumerate(('Reward', 'Average Q', 'Loss')):
             axs[i].plot([h[i] for h in self.history])
             axs[i].set_xlabel('Episodes')
             axs[i].set_ylabel(l)
-        plt.grid(True)
+            axs[i].grid(True)
         plt.show()
 
-    def train_dqn(self):
-        if self.verbose:
+    def train_dqn(self, verbose):
+        if verbose:
             print('Training DQN agent against:', [o.name for o in self.opponents])
         for e in range(self.episodes):
             info = self.run_episode(self.opponents)
             self.update_target_model()
             self.history.append((info['reward'], info['avg_max_q'], info['loss'], info['steps']))
-            if self.verbose:
+            if verbose:
                 print(f"Episode: {e} Steps: {info['steps']} Epsilon: {self.e_greedy.epsilon:.2f} Loss: {info['loss']:.2f} Reward: {info['reward']:.2f} Q: {info['avg_max_q']:.2f}")
-        if self.verbose:
+        if verbose:
             self.plot_history()
         return self

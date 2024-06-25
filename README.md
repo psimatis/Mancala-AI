@@ -49,6 +49,9 @@ To facilitate experimentation, the non-trivial opponents are highly configurable
 
 ## A deeper dive for the nerds
 
+## Bug Notice
+I recently noticed a bug with the minimax implementation. The bug is fixed and I will update the results and my comments soon.
+
 #### Project Goal
 My goal is to develop challenging opponents using a variety of AI methods. This project has been immensely fun, and I may add more agents in the future.
 
