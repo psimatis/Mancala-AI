@@ -7,3 +7,4 @@
 /wandb
 .pylintrc
 wandb_dqn_experiment.py
+gui.py
