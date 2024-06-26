@@ -106,21 +106,21 @@ Impartial evaluation is challenging due to varying performance metrics among age
 </table>
 Minimax, which simulates the game two moves deep, dominated every game. Double DQN lost only three games (two against Minimax) and outperformed DQN, Vanilla GA, and Greedy, which all tied for third place. Tournament GA underperformed, likely due to overfitting (i.e., individuals only learned how to beat their peers). Unsurprisingly, Naive lost every game and serves as a good baseline.
 
-A noteworthy observation is that most agents execute a perfect opening[^8] as Player 1. Furthermore, I experimented with training the Genetic and DQN agents both as Player 1 and Player 2 but found no significant benefit. This is likely because player order is an insignificant subset of the total possible states, which considering 48 stones and 14 pits, are roughly:
+A noteworthy observation is that most agents execute a perfect opening[^7] as Player 1. Furthermore, I experimented with training the Genetic and DQN agents both as Player 1 and Player 2 but found no significant benefit. This is likely because player order is an insignificant subset of the total possible states, which considering 48 stones and 14 pits, are roughly:
 $$\binom{48 + 14 - 1}{14 - 1} = \binom{61}{13}$$
  
 #### DQN
 DQN training involves numerous parameters and is notoriously unstable. In addition, designing a dense and *good* reward policy is more of an art than a science. However, the use of Huber loss and soft updates of network weights (Polyak averaging) is beneficial in stabilizing training. Both DQN agents were trained against Minimax (i.e., the strongest agent). There is potential for improvement if trained against a more diverse set of strategies.The figure below demonstrates the reward and loss averages per episode, and average Q-value for preselected states[^2].
 <p align="center">
-<img src="./plots/dqn.png" style="width:48%" title="DQN">
-<img src="./plots/ddqn.png" style="width:48%" title="DDQN">
+<img src="./plots/dqn.png" style="width:49%; height:600px;" title="DQN">
+<img src="./plots/ddqn.png" style="width:49%; height:600px;" title="DDQN">
 </p>
  
 #### Genetic Algorithm
 I often heard in academic circles that *"genetic stuff never works"*. Nevertheless, I decided to give this *underdog* a chance. Both vanilla and tournament selection use the number of wins as fitness to evolve a score distribution for each pit. That score is multiplied by the number of stones, and the pit with the highest value is selected for the next move. The figure below shows the best fitness per generation for Vanilla GA (left) and Tournament GA (right).
 <p align="center">
-<img src="./plots/ga_random.png" style="width:59%" title="Vanilla GA">
-<img src="./plots/ga_tournament.png" style="width:59%" title="GA Tournament">
+<img src="./plots/ga_random.png" style="width:49%; height:auto;" title="Vanilla GA">
+<img src="./plots/ga_tournament.png" style="width:49%; height:auto;" title="GA Tournament">
 </p>
  
 #### Minimax
