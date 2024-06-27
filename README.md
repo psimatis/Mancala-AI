@@ -53,6 +53,10 @@ To facilitate experimentation, the non-trivial opponents are highly configurable
 My goal is to develop challenging opponents using different AI methods. This project has been immensely fun, and I may add more agents in the future.
  
 #### Agent Evaluation
+
+**Bug Alert**
+I noticed a bug on the capture mechanism. The bug is fixed but I did not re-run the experiments yet.
+
 Impartial evaluation is challenging due to varying performance metrics among agents, and using myself as a sparring partner isn't ideal. Thus, I opted for tournaments between agents as the most practical and fair method (i.e., the best agent has the most wins). *main.py* runs 100 games per agent combination, and an agent wins by beating >50% of the games. The table below demonstrates the performance of various agents in a tournament. Running the code with the provided parameters must deliver the same results. These configurations are <ins>not</ins> optimal for training parameters but serve as a good starting point. Feel free to experiment and let me know of any interesting findings.
 <table align="center">
   <tr>

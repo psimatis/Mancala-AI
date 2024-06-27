@@ -24,8 +24,8 @@ class Game:
     def print_board(self, info=None):
         if info: 
             print(info)
-        print(self.board[1])
-        print(self.board[2])
+        print(self.board[2][STORE], [p for p in reversed(self.board[2][:STORE])])
+        print(' ', self.board[1][:STORE], self.board[1][STORE])
         print('---------')
 
     def get_state(self):
@@ -74,11 +74,12 @@ class Game:
         if side != landing['side'] or self.board[side][landing['pit']] > 1 or landing['pit'] == STORE:
             return False
         opponent = self.switch_side(side)
-        stones = self.board[opponent][landing['pit']]
+        captured_pit = (STORE - 1) - landing['pit']
+        stones = self.board[opponent][captured_pit]
         if stones == 0:
             return False
         self.board[side][STORE] += stones + 1
-        self.board[opponent][landing['pit']] = 0
+        self.board[opponent][captured_pit] = 0
         self.board[side][landing['pit']] = 0
         return True
     
@@ -90,7 +91,8 @@ class Game:
             simulation = self.copy()
             landing = simulation.move(opponent, p)
             if simulation.capture(opponent, landing):
-                exposures.add((landing['pit'], self.board[self.current_player][landing['pit']]))
+                captured_pit = (STORE - 1) - landing['pit']
+                exposures.add((landing['pit'], self.board[self.current_player][captured_pit]))
         return sum([s[1] for s in exposures])
 
     def get_winner(self):
