@@ -1,6 +1,6 @@
 import random
-import matplotlib.pyplot as plt
 import pickle
+import matplotlib.pyplot as plt
 import mancala
 from players.naive import Naive
 

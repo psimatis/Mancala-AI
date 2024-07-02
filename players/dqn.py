@@ -55,7 +55,7 @@ class EGreedy:
         return False
 
 class DQNAgent:
-    def __init__(self, name='dqn', opponents=[Naive()], episodes=500, epsilon_min=0.01, epsilon_decay=0.99, batch_size=256, capacity=10000, gamma=0.9, learning_rate=0.001, neurons=32, tau=0.01, double_dqn=False):
+    def __init__(self, name='dqn', opponents=[Naive()], episodes=300, epsilon_min=0.01, epsilon_decay=0.99, batch_size=512, capacity=10000, gamma=0.9, learning_rate=0.0001, neurons=64, tau=0.01, double_dqn=False):
         self.name = name
         self.state_size = (mancala.STORE + 1) * 2
         self.action_size = mancala.STORE
@@ -95,7 +95,7 @@ class DQNAgent:
     def update_target_model(self):
         for target_param, policy_param in zip(self.target_model.parameters(), self.policy_model.parameters()):
             target_param.data.copy_(self.tau * policy_param.data + (1 - self.tau) * target_param.data)
-    
+
     def load(self, path, neurons=None):
         state_dict = torch.load(path)
         if neurons:
@@ -107,7 +107,7 @@ class DQNAgent:
         self.policy_model.eval()
         self.e_greedy.epsilon = 0
         return self
-    
+
     def save(self, path):
         model_path = os.path.join(path, f'dqn_model_{self.name}.pth')
         state_dict = {
@@ -150,7 +150,7 @@ class DQNAgent:
         self.optimizer.step()
         self.e_greedy.update()
         return loss.item()
-    
+
     def calculate_reward(self, env, player, init_score, info):
         score = env.board[player][mancala.STORE]
         reward = score - init_score
