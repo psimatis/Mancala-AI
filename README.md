@@ -1,8 +1,8 @@
 # Mancala-AI
-Mancala[^1] is a classic board game where two players compete in stone collection. After beating the Nintendo Switch AI, I decided to write my own. The repository contains the complete game (e.g., capture logic) along with several AI players.
+Mancala[^1] is a classic board game where two players compete in stone collection. After beating the Nintendo Switch AI, I decided to write my own. The repository contains the complete game logic (e.g., capture mechanism) along with several AI agents of various difficulties.
  
-## Players
-1. **Deep Q-Learning Network (DQN)**[^2]: Uses reinforcement learning to develop a strategy based on rewards.
+## Agents
+1. **Deep Q-Learning Network (DQN)**[^2]: Deep reinforcement learning develops a strategy based on rewards.
 2. **Double DQN**[^3]: Enhances DQN by reducing overestimation.
 1. **Genetic Algorithm**[^4]: Evolution selects the fittest candidate after multiple generations of simulated games.
 1. **Tournament Selection**[^5]: Selects the fittest candidate through multiple tournaments (i.e., battle royal).
@@ -15,15 +15,20 @@ Mancala[^1] is a classic board game where two players compete in stone collectio
     python main.py
     
 The main script:
-1. Initializes and trains the AI agents.
+1. Initializes the AI agents.
 2. Runs a tournament between them.
 3. Allows the player to compete against the AI.
- 
+
+The script can be customized using three parameters:
+1. **TRAIN_AGENTS** (boolean): If true, the script trains the AI agents from scratch. Otherwise, it loads pretrained agents.
+2. **SHOW_TRAINING** (boolean): When true, it displays the training progress, including plots.
+3. **GAMES** (int): Specifies the number of games played between each pair of AI agents during the tournament.
+
 ## Parameters
-To facilitate experimentation, the non-trivial opponents are highly configurable.
+To facilitate experimentation, the non-trivial opponents are highly configurable. Furthermore, the **verbose** (boolean) parameter enables printing during training if applicable.
  
 #### DQN
-1. **opponents** (list of player objects): The sparring buddies used by DQN during training.
+1. **opponents** (list of player objects): The sparring buddies the DQN uses during training.
 1. **episodes** (int): Number of training games.
 1. **epsilon_min** (float): Minimum epsilon for the epsilon-greedy policy.
 1. **epsilon_decay** (float): Decay rate of epsilon.
@@ -47,17 +52,13 @@ To facilitate experimentation, the non-trivial opponents are highly configurable
 #### Minimax
 1. **depth** (int): The maximum depth of the game tree that the algorithm will explore.
  
-## A deeper dive for the nerds
- 
-#### Project Goal
-My goal is to develop challenging opponents using different AI methods. This project has been immensely fun, and I may add more agents in the future.
- 
-#### Agent Evaluation
+## Experiments
+Evaluation is challenging due to varying performance metrics among agents, and using myself as a sparring partner isn't ideal. Thus, I opted for tournaments between agents as the most practical and fair method, where the best agent is the one with the most wins. The tournament runs multiple games per agent combination, and an agent wins by beating >50% of the games. Draws are possible but ignored. 
 
-**Bug Alert**
-I noticed a bug on the capture mechanism. The bug is fixed but I did not re-run the experiments yet.
+I trained the agents using grid search, and the best performing ones are stored in the *best_models* directory. My training configuration might <ins>not</ins> be optimal so feel free to experiment and *let me know if you can beat my agents*.
 
-Impartial evaluation is challenging due to varying performance metrics among agents, and using myself as a sparring partner isn't ideal. Thus, I opted for tournaments between agents as the most practical and fair method (i.e., the best agent has the most wins). *main.py* runs 100 games per agent combination, and an agent wins by beating >50% of the games. The table below demonstrates the performance of various agents in a tournament. Running the code with the provided parameters must deliver the same results. These configurations are <ins>not</ins> optimal for training parameters but serve as a good starting point. Feel free to experiment and let me know of any interesting findings.
+The table below demonstrates agent performance in a tournament. Running the code with **TRAIN_AGENT** set to *False* should return the same results. 
+
 <table align="center">
   <tr>
     <th>Player</th>
@@ -66,34 +67,40 @@ Impartial evaluation is challenging due to varying performance metrics among age
     <th>Total Wins</th>
   </tr>
   <tr>
-    <td>Minimax</td>
-    <td align="center">6</td>
-    <td align="center">6</td>
-    <td align="center">12</td>
-  </tr>
-  <tr>
     <td>Double DQN</td>
-    <td align="center">5</td>
+    <td align="center">7</td>
     <td align="center">4</td>
-    <td align="center">9</td>
+    <td align="center">11</td>
   </tr>
   <tr>
     <td>DQN</td>
-    <td align="center">2</td>
+    <td align="center">7</td>
     <td align="center">3</td>
-    <td align="center">5</td>
+    <td align="center">10</td>
+  </tr>
+  <tr>
+    <td>Minimax Even</td>
+    <td align="center">7</td>
+    <td align="center">3</td>
+    <td align="center">10</td>
+  </tr>
+  <tr>
+    <td>Minimax Odd</td>
+    <td align="center">7</td>
+    <td align="center">2</td>
+    <td align="center">9</td>
+  </tr>
+  <tr>
+    <td>Greedy</td>
+    <td align="center">4</td>
+    <td align="center">3</td>
+    <td align="center">7</td>
   </tr>
   <tr>
     <td>Vanilla GA</td>
     <td align="center">3</td>
-    <td align="center">2</td>
-    <td align="center">5</td>
-  </tr>
-  <tr>
-    <td>Greedy</td>
-    <td align="center">2</td>
     <td align="center">3</td>
-    <td align="center">5</td>
+    <td align="center">6</td>
   </tr>
   <tr>
     <td>Tournament GA</td>
@@ -108,34 +115,38 @@ Impartial evaluation is challenging due to varying performance metrics among age
     <td align="center">0</td>
   </tr>
 </table>
-Minimax, which simulates the game two moves deep, dominated every game. Double DQN lost only three games (two against Minimax) and outperformed DQN, Vanilla GA, and Greedy, which all tied for third place. Tournament GA underperformed, likely due to overfitting (i.e., individuals only learned how to beat their peers). Unsurprisingly, Naive lost every game and serves as a good baseline.
 
+*Double DQN* achieved the highest total wins, while *DQN* and *Minimax Even* (i.e., depth two) followed closely with 10 wins each. *Minimax Odd* (i.e., depth three) came third, perfoming slightly worse than its even variant. *Greedy* and *Vanilla GA* demonstrated moderate success, being placed fifth and sixth respectively. *Tournament GA* underperformed with only two, just above *Naive*, which lost every game and serves as a good baseline. 
 
-A noteworthy observation is that most agents execute a perfect opening[^7] as Player 1. Furthermore, I experimented with training the Genetic and DQN agents both as Player 1 and Player 2 but found no significant benefit. This can be attributed to the minimal impact of player order on the overall state space. Considering the configuration of 48 stones distributed across 14 pits, the total number of possible states is approximately:
+Anecdotaly, I always found playing as Player 2 harder. A notable observation is that Player 1 consistently achieved more wins. This disparity could be due to an inherent first-move advantage in Mancala, which is further supported by the fact that most agents execute a perfect opening[^7]. Nevertheless, I experimented with training the Genetic and DQN agents both as Player 1 and Player 2 to no significant benefit. This can be attributed to the minimal impact of player order on the overall state space. Considering the configuration of 48 stones distributed across 14 pits, the total number of possible states is approximately:
 $$\binom{48 + 14 - 1}{14 - 1} = \binom{61}{13}$$
  
 #### DQN
-DQN training involves numerous parameters and is notoriously unstable. In addition, designing a dense and effective reward policy is more of an art than a science. However, the use of Huber loss and soft updates of network weights (Polyak averaging) is beneficial in stabilizing training. Both DQN agents were trained against Minimax (i.e., the strongest agent) but there is potential for improvement if trained against a diverse set of strategies. 
+DQN training involves numerous parameters and is notoriously unstable. However, the use of Huber loss and soft updates of network weights (Polyak averaging) is beneficial in stabilizing training. Both DQN agents were trained against a single opponent, but there is potential for improvement if trained against a diverse set of strategies. The figures below illustrate the average reward per episode for *Double DQN* (left) and *DQN* (right). The graph was smoothed using running average with the original line faded in the background. 
 
-The figure below illustrates the reward and loss averages per episode, as well as the average Q-value for preselected states, comparing Double DQN (left) and DQN (right). Interestingly, despite the similar figures, Double DQN outperforms DQN in playing Mancala. This highlights the difference between evaluation metrics and real-world performance, which is especially true for reinforcement learning.
 <p align="center">
- <img src="./plots/ddqn.png" style="width:49%; height:600px;" title="DDQN">
-<img src="./plots/dqn.png" style="width:49%; height:600px;" title="DQN">
+ <img src="./plots/ddqn.png" style="width:49%" title="DDQN">
+<img src="./plots/dqn.png" style="width:49%" title="DQN">
+</p>
 
+Designing a dense and effective reward policy is more of an art than a science. For example, *Double DQN* outperforms *DQN* despite their similar reward. To evaluate the effectiveness of my reward structure in helping the agent win, I plotted the number of wins against the reward received for various training configurations.  The empty upper left corner indicates that agents with low rewards tend to lose. In addition, the dot color denotes the number of steps taken by the agent during an episode. 
+<p align="center">
+ <img src="./plots/rewards vs wins.png" style="width:70%" title="DDQN">
 </p>
  
 #### Genetic Algorithm
-I often heard in academic circles that *"genetic stuff never works"*. Nevertheless, I decided to give this *underdog* a chance. Both vanilla and tournament selection use the number of wins as fitness to evolve a score distribution for the pits. When the agent acts, the score is multiplied by the number of stones, and the pit with the highest value is selected as the next move. The figure below shows the best fitness per generation for Vanilla GA (left) and Tournament GA (right).
+I often heard in academic circles that *"genetic stuff never works"*. Nevertheless, I decided to give this *underdog* a chance. Both vanilla and tournament selection use the number of wins as fitness to evolve a score distribution for the pits. When the agent acts, the score is multiplied by the number of stones in each pit, and the pit with the highest value is selected as the next move. This method is quite rigid and it does not take into account game mechanics (e.g., bonus round). Furthermore, *Tournament GA* underperformed, likely due to overfitting (i.e., individuals only learned how to beat their peers). The figure below shows the best fitness per generation for *Vanilla GA* (left) and *Tournament GA* (right).
+
 <p align="center">
 <img src="./plots/ga_random.png" style="width:49%; height:auto;" title="Vanilla GA">
 <img src="./plots/ga_tournament.png" style="width:49%; height:auto;" title="GA Tournament">
 </p>
  
 #### Minimax
-Given proper evaluation, deep explorations can outperform any player. However, the number of possible states grows exponentially, making Minimax slow even with alpha-beta pruning[^8]. An interesting observation is that even depths perform better than odd depths. Intuitively, even depths end on the opponent's turn, allowing a safer strategy, assuming optimal play. On the other hand, odd depths are riskier since the player does not see the opponent's immediate response.
+Given proper evaluation, deep explorations can outperform any player. However, the number of possible states grows exponentially, making Minimax slow even with alpha-beta pruning[^8]. An interesting observation is that even depths perform better than odd depths. Intuitively, even depths conclude on the opponent's turn, allowing a safer strategy, assuming optimal play. Conversely, odd depths are riskier since the player does not see the opponent's immediate response.
 
-#### Future Work
-I plan to add more reinforcement learning agents and, data provided, supervised learning agents.
+### Future Work
+This project has been immensely fun, and I may add more agents in the future.
  
 ## References
 [^1]: Mancala: https://en.wikipedia.org/wiki/Mancala
