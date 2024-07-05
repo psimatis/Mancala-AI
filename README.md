@@ -116,9 +116,9 @@ The table below demonstrates agent performance in a tournament. Running the code
   </tr>
 </table>
 
-*Double DQN* achieved the highest total wins, while *DQN* and *Minimax Even* (i.e., depth two) followed closely with 10 wins each. *Minimax Odd* (i.e., depth three) came third, perfoming slightly worse than its even variant. *Greedy* and *Vanilla GA* demonstrated moderate success, being placed fifth and sixth respectively. *Tournament GA* underperformed with only two, just above *Naive*, which lost every game and serves as a good baseline. 
+*Double DQN* achieved the highest total wins, while *DQN* and *Minimax Even* (i.e., depth two) followed closely with 10 wins each. *Minimax Odd* (i.e., depth three) came third, perfoming slightly worse than its even variant. *Greedy* and *Vanilla GA* demonstrated moderate success, being placed fifth and sixth respectively. *Tournament GA* underperformed with only two wins, just above *Naive*, which lost every game and serves as a good baseline. 
 
-Anecdotaly, I always found playing as Player 2 harder. A notable observation is that Player 1 consistently achieved more wins. This disparity could be due to an inherent first-move advantage in Mancala, which is further supported by the fact that most agents execute a perfect opening[^7]. Nevertheless, I experimented with training the Genetic and DQN agents both as Player 1 and Player 2 to no significant benefit. This can be attributed to the minimal impact of player order on the overall state space. Considering the configuration of 48 stones distributed across 14 pits, the total number of possible states is approximately:
+Anecdotally, I always found playing as Player 2 harder. A notable observation is that Player 1 consistently achieved more wins. This disparity could be due to an inherent first-move advantage in Mancala, which is further supported by the fact that most agents execute a perfect opening[^7]. Nevertheless, I experimented with training the Genetic and DQN agents both as Player 1 and Player 2 to no significant benefit. This can be attributed to the minimal impact of player order on the overall state space. Considering the configuration of 48 stones distributed across 14 pits, the total number of possible states is approximately:
 $$\binom{48 + 14 - 1}{14 - 1} = \binom{61}{13}$$
  
 #### DQN
