@@ -129,7 +129,7 @@ DQN training involves numerous parameters and is notoriously unstable. However, 
 <img src="./plots/dqn.png" style="width:49%" title="DQN">
 </p>
 
-Designing a dense and effective reward policy is more of an art than a science. For example, *Double DQN* outperforms *DQN* despite their similar reward. To evaluate the effectiveness of my reward structure in helping the agent win, I plotted the number of wins against the reward received for various training configurations.  The empty upper left corner indicates that agents with low rewards tend to lose. In addition, the dot color denotes the number of steps taken by the agent during an episode. 
+Designing a dense and effective reward policy is more of an art than a science. To evaluate the effectiveness of my reward structure in helping the agent win, I plotted the number of wins against the reward received for various training configurations.  The empty upper left corner indicates that agents with low rewards tend to lose. In addition, the dot color denotes the number of steps taken by the agent during an episode. 
 <p align="center">
  <img src="./plots/rewards vs wins.png" style="width:70%" title="DDQN">
 </p>
